@@ -1,0 +1,19 @@
+# OCP Falsification Challenge
+
+This example demonstrates the core OCP verification invariant:
+
+recompute → compare → confirm inclusion
+
+The observation is `observation.txt`.
+
+To test the example:
+
+1. Verify the original file against `proof.json`
+2. Change any character in `observation.txt`
+3. Verify again
+
+The original file should verify successfully.
+
+The modified file must fail.
+
+If the modified file still verifies, the verification system is broken.
