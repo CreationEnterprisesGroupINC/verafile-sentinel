@@ -20,15 +20,11 @@ There is no standard way to verify something **independently**.
 
 ## The Model
 
-```
 data → digest → public commitment
-```
 
 Verification reduces to:
 
-```
 recompute → compare → confirm inclusion
-```
 
 No API. No trust in the originating system.
 
@@ -65,13 +61,30 @@ The network only confirms that a commitment exists.
 
 ## Start Here
 
-- 📄 Specification → `/docs/spec/ocp-v1.0.0.md`  
-- 🔍 Examples → `/examples`  
-- ⚙️ Contracts → `/contracts`  
+- 📄 Specification → /docs/spec/ocp-v1.0.0.md  
+- 🔍 Examples → /examples  
+- ⚙️ Contracts → /contracts  
 - 🌐 Live Demo → https://observation-commitment-protocol.vercel.app/
+
+---
+
+## Commercial Use
+
+OCP is released under the MIT License and may be freely implemented.
+
+VeraFile is the reference implementation and commercial product built on OCP, providing:
+
+- hosted verification  
+- enterprise integrations  
+- production-grade tooling  
+
+OCP defines the verification primitive.  
+VeraFile delivers it as a product.
+
+Commercial support and licensing for VeraFile are available.
 
 ---
 
 ## Status
 
-**v1.0.0 — Initial Specification Release**
+v1.0.0 — Initial Specification Release
