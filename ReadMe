@@ -1,0 +1,77 @@
+# Observation Commitment Protocol (OCP)
+
+A minimal primitive for independently verifying that a specific byte sequence was committed to a public ledger.
+
+---
+
+## The Problem
+
+Most digital systems can prove things—  
+but only **inside themselves**.
+
+Step outside the system, and verification depends on:
+- APIs  
+- platforms  
+- intermediaries  
+
+There is no standard way to verify something **independently**.
+
+---
+
+## The Model
+
+```
+data → digest → public commitment
+```
+
+Verification reduces to:
+
+```
+recompute → compare → confirm inclusion
+```
+
+No API. No trust in the originating system.
+
+---
+
+## What OCP Is
+
+- A minimal primitive for committing arbitrary data digests  
+- A system-independent verification model  
+- A portable verification boundary  
+
+---
+
+## What OCP Is Not
+
+- Not storage  
+- Not identity  
+- Not authorship  
+- Not canonical encoding  
+- Not an application framework  
+
+---
+
+## Why It Matters
+
+OCP separates **truth from systems**.
+
+A verifier does not ask what’s true—  
+they compute it.
+
+The network only confirms that a commitment exists.
+
+---
+
+## Start Here
+
+- 📄 Specification → `/docs/spec/ocp-v1.0.0.md`  
+- 🔍 Examples → `/examples`  
+- ⚙️ Contracts → `/contracts`  
+- 🌐 Live Demo → https://observation-commitment-protocol.vercel.app/
+
+---
+
+## Status
+
+**v1.0.0 — Initial Specification Release**
