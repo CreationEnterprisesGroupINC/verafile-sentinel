@@ -2,6 +2,8 @@
 
 A minimal primitive for independently verifying that a specific byte sequence was committed to a public ledger.
 
+Minimal. Verifiable. System-independent.
+
 ---
 
 ## The Problem
