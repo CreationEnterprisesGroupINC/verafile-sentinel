@@ -1,4 +1,4 @@
-# Contracts
+# Smart Contract Reference
 
 OCP requires only a minimal on-chain commitment primitive.
 
