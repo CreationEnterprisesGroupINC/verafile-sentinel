@@ -1,12 +1,12 @@
 # Protocol Documentation
 
-This directory contains the formal specification and supporting materials for the Observation Commitment Protocol (OCP).
+This directory contains the formal specification for the Observation Commitment Protocol (OCP).
 
 ---
 
 ## Overview
 
-OCP defines a minimal verification boundary for independently confirming that a specific byte sequence was committed to a public ledger.
+OCP defines a minimal verification boundary for independently confirming that a specific byte sequence was committed to a ledger.
 
 Verification reduces to:
 
@@ -17,19 +17,17 @@ recompute → compare → confirm inclusion
 ## Contents
 
 ### 📄 Specification
-- /spec/ocp-v1.0.0.md  
-  The canonical protocol definition, including the verification model, assumptions, and formal structure.
+- `/spec/ocp-v1.0.0.md`
 
-### 📘 Supporting Documents
-Additional materials explaining the protocol, proof format, and usage patterns.
+The canonical protocol definition, including the verification model, assumptions, and formal structure.
 
 ---
 
-## How to Read This
+## Reading Order
 
-- Start with the Specification for the formal definition  
-- Use Examples in /examples to see real proofs  
-- Reference Contracts in /contracts for minimal on-chain patterns  
+- Start with the specification for the formal protocol definition
+- Use `/examples` to inspect verification artifacts
+- Use `/contracts` to inspect the minimal reference commitment primitive
 
 ---
 
@@ -41,7 +39,8 @@ It does not specify:
 - storage
 - identity
 - authorship
-- application-layer behavior
+- application behavior
+- deployment architecture
 
 ---
 
