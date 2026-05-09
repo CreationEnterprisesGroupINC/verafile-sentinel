@@ -1,9 +1,13 @@
 # Smart Contract Reference
 
-OCP requires only a minimal on-chain commitment primitive.
+OCP requires only a minimal ledger commitment primitive.
 
-A basic implementation records a digest and emits an event.
+This folder includes a minimal Solidity reference contract:
 
-More complex contract logic is not required for the protocol itself.
+- `ObservationCommitment.sol`
 
-Full reference implementations and application-layer integrations are intentionally not included in this repository.
+The contract emits digest commitment events that can be independently inspected from ledger data.
+
+OCP defines the verification boundary.
+
+Application logic, storage models, identity systems, and production deployment architectures are intentionally outside the scope of this repository.
