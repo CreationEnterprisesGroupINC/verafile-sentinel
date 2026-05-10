@@ -29,7 +29,13 @@ If one byte changes, verification fails — across any system.
 ### 1) Commit (produce a proof)
 
 ```bash
-npx ocp-commit report.txt report.proof.json
+npx ocp-commit report.txt
+```
+
+This automatically creates:
+
+```bash
+report.proof.json
 ```
 
 ### 2) Verify (anywhere, later)
