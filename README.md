@@ -29,13 +29,13 @@ If one byte changes, verification fails — across any system.
 ### 1) Commit (produce a proof)
 
 ```bash
-node reference-cli/commit.js report.txt report.proof.json
+npx ocp-commit report.txt report.proof.json
 ```
 
 ### 2) Verify (anywhere, later)
 
 ```bash
-node reference-cli/verify.js report.txt report.proof.json
+npx ocp-verify report.txt report.proof.json
 ```
 
 Expected:
@@ -194,10 +194,8 @@ https://github.com/damonzwicker/verafile
 
 ## Quick Verify
 
-Clone the repo and run:
-
 ```bash
-node reference-cli/verify.js examples/example-observation.txt examples/example-proof.ocp.json
+npx ocp-verify examples/example-observation.txt examples/example-proof.ocp.json
 ```
 
 Expected output:
