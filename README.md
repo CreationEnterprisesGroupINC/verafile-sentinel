@@ -29,20 +29,7 @@ If one byte changes, verification fails — across any system.
 ### 1) Commit (produce a proof)
 
 ```bash
-shasum -a 256 report.txt
-```
-
-Create `report.proof.json`:
-
-```json
-{
-  "version": "ocp-1",
-  "hash": "0x<PASTE_SHA256>",
-  "txHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-  "network": "demo-local",
-  "contract": "0x0000000000000000000000000000000000000000",
-  "extractionRule": "demo:proof.hash"
-}
+node reference-cli/commit.js report.txt report.proof.json
 ```
 
 ### 2) Verify (anywhere, later)
