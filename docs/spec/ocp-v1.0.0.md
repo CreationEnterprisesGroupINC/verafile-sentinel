@@ -33,6 +33,11 @@ H′ == H
 and  
 H ∈ R(tx)
 
+Where:
+
+- `hash` is the same function used during commitment  
+- `R(tx)` deterministically extracts the committed digest from the transaction  
+
 ---
 
 ## Verification Invariant
@@ -43,11 +48,11 @@ recompute → compare → confirm inclusion
 
 ## Assumptions
 
-- hash is deterministic  
-- hash is collision-resistant  
-- tx is a valid transaction in a public ledger  
-- the referenced transaction tx can be resolved and inspected  
-- an extraction rule R exists such that H can be obtained from tx  
+- `hash` is deterministic  
+- `hash` is collision-resistant  
+- `tx` is a valid transaction in a public ledger  
+- the referenced transaction `tx` can be resolved and inspected  
+- an extraction rule `R` exists such that `H` can be obtained from `tx`  
 
 ---
 
@@ -62,7 +67,7 @@ It does not define:
 - authorship  
 - canonical encoding  
 - application-layer semantics  
-- extraction rules R  
+- a canonical extraction rule `R` (implementations may specify one)  
 
 ---
 
@@ -76,5 +81,5 @@ OCP does not prove:
 
 OCP proves only:
 
-- that a specific digest H was committed to a public ledger  
+- that a specific digest `H` was committed to a public ledger  
 - that a provided observation produces that same digest  
