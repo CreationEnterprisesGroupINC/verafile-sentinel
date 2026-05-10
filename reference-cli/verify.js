@@ -12,16 +12,21 @@ function pass() {
   console.log("VALID");
 }
 
-const [, , filePath, proofPath] = process.argv;
+const [, , filePath, proofArg] = process.argv;
 
-if (!filePath || !proofPath) {
-  console.error("Usage: ocp-verify <file> <proof.json>");
+if (!filePath) {
+  console.error("Usage: ocp-verify <file> [proof.json]");
   process.exit(1);
 }
 
 if (!fs.existsSync(filePath)) {
   fail(`file not found: ${filePath}`);
 }
+
+// Auto-detect proof file
+const proofPath =
+  proofArg ||
+  filePath.replace(/(\.[^/.]+)?$/, ".proof.json");
 
 if (!fs.existsSync(proofPath)) {
   fail(`proof not found: ${proofPath}`);
