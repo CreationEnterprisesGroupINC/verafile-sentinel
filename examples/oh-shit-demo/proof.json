@@ -1,0 +1,8 @@
+{
+  "version": "ocp-1",
+  "hash": "0xaaa7269bba73a3f3b1498be43abf821890682824a9760f8f4116ca87ec37e9df",
+  "txHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "network": "demo-local",
+  "contract": "0x0000000000000000000000000000000000000000",
+  "extractionRule": "demo:proof.hash"
+}
