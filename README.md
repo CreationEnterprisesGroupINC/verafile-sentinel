@@ -71,26 +71,14 @@ The network only confirms that a commitment exists.
 
 ## Start Here
 
-- 📄 Specification → /docs/spec/ocp-v1.0.0.md  
+- 📄 Core Specification → /docs/spec/ocp-v1.0.0.md  
+- 🧾 Proof Format → /docs/spec/proof-format-v1.md  
 - 🔍 Examples → /examples  
 - ⚙️ Contracts → /contracts  
 - 🌐 Live Demo → https://observation-commitment-protocol.vercel.app/  
 
----
-
-## Reference Implementation
-
-VeraFile is the reference implementation of OCP:
-
+Reference implementation (VeraFile):  
 https://github.com/damonzwicker/verafile
-
-It provides:
-- CLI verification  
-- hosted verification  
-- production tooling  
-
-OCP defines the protocol.  
-VeraFile implements it.
 
 ---
 
