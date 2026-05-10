@@ -61,6 +61,35 @@ OCP can be used anywhere a digital artifact may need to be independently verifie
 - file integrity  
 - institutional records  
 
+### Example: Verifying an AI Output
+
+An AI system generates a report:
+
+```text
+AI Risk Assessment: MEDIUM_RISK
+Approved for internal review.
+```
+
+That output is committed using OCP.
+
+Later, the report is modified:
+
+```text
+AI Risk Assessment: LOW_RISK
+Approved for internal review.
+```
+
+Using the original proof:
+
+- the original output verifies as VALID  
+- the modified output returns INVALID  
+
+The difference is one word.
+
+Verification does not depend on the AI system, API, or platform.
+
+It depends only on the bytes.
+
 ---
 
 ## The Protocol
