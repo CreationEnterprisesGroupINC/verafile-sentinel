@@ -50,6 +50,19 @@ Without a system-independent verification boundary,
 
 ---
 
+## Use Cases
+
+OCP can be used anywhere a digital artifact may need to be independently verified later:
+
+- AI outputs and execution traces  
+- legal evidence and filings  
+- audit logs and compliance records  
+- media provenance  
+- file integrity  
+- institutional records  
+
+---
+
 ## The Protocol
 
 An observation is any byte sequence.
