@@ -24,6 +24,55 @@ If one byte changes, verification fails — across any system.
 
 ---
 
+## 🔌 Integrate in 2 Minutes
+
+### 1) Commit (produce a proof)
+
+```bash
+shasum -a 256 report.txt
+```
+
+Create `report.proof.json`:
+
+```json
+{
+  "version": "ocp-1",
+  "hash": "0x<PASTE_SHA256>",
+  "txHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "network": "demo-local",
+  "contract": "0x0000000000000000000000000000000000000000",
+  "extractionRule": "demo:proof.hash"
+}
+```
+
+### 2) Verify (anywhere, later)
+
+```bash
+node reference-cli/verify.js report.txt report.proof.json
+```
+
+Expected:
+
+```
+VALID: file hash matches proof hash
+```
+
+If any byte changes:
+
+```
+INVALID: hash mismatch
+```
+
+### 3) Use in your system
+
+- Save the file + proof together  
+- Or store the proof alongside records/logs  
+- Verification requires only the file and the proof  
+
+No API. No platform dependency.
+
+---
+
 ## The Problem
 
 Most digital systems can prove things—  
