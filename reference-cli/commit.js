@@ -33,7 +33,5 @@ const proof = {
 
 fs.writeFileSync(proofPath, JSON.stringify(proof, null, 2) + "\n");
 
-console.log("COMMITTED: proof created");
-console.log(`file:  ${filePath}`);
-console.log(`proof: ${proofPath}`);
-console.log(`hash:  ${hash}`);
+// Clean output
+console.log(`COMMITTED: ${filePath} → ${proofPath}`);
