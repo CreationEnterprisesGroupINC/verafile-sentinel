@@ -1,5 +1,7 @@
 # Observation Commitment Protocol (OCP)
 
+If one byte changes, verification fails — across any system.
+
 A minimal protocol for independently verifying that a specific byte sequence was committed to a public ledger.
 
 Minimal. Verifiable. System-independent.
