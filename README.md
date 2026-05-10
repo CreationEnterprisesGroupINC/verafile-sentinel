@@ -13,3 +13,119 @@ Minimal. Verifiable. System-independent.
 ```bash
 cd examples/oh-shit-demo
 ./run-demo.sh
+```
+
+Expected:
+
+VALID  
+INVALID  
+
+If one byte changes, verification fails — across any system.
+
+---
+
+## The Problem
+
+Most digital systems can prove things—  
+but only **inside themselves**.
+
+Step outside the system, and verification depends on:
+- APIs  
+- platforms  
+- intermediaries  
+
+There is no standard way to verify something **independently**.
+
+---
+
+## Where This Breaks Without OCP
+
+AI outputs cannot be independently verified  
+Legal evidence depends on originating systems  
+APIs and platforms are non-permanent  
+Digital artifacts become disputable over time  
+
+Without a system-independent verification boundary,  
+“what actually happened” becomes ambiguous.
+
+---
+
+## The Protocol
+
+An observation is any byte sequence.
+
+data → digest → public commitment
+
+Verification reduces to:
+
+recompute → compare → confirm inclusion
+
+A verifier:
+- recomputes the digest  
+- compares it to the committed value  
+- confirms that the digest exists in a referenced transaction  
+
+No API. No platform dependency. No trust in the originating system.
+
+---
+
+## What OCP Defines
+
+- A minimal verification model  
+- A system-independent verification boundary  
+- A portable verification artifact (digest + transaction reference)  
+
+---
+
+## What OCP Does Not Define
+
+- storage  
+- identity  
+- authorship  
+- canonical encoding  
+- application-layer semantics  
+- a canonical extraction rule  
+
+---
+
+## Why It Matters
+
+OCP separates **verification from systems**.
+
+A verifier does not ask what’s true—  
+they compute it.
+
+The network only confirms that a commitment exists.
+
+---
+
+## Start Here
+
+- 📄 Core Specification → /docs/spec/ocp-v1.0.0.md  
+- 🧾 Proof Format → /docs/spec/proof-format-v1.md  
+- 🔍 Examples → /examples  
+- ⚙️ Contracts → /contracts  
+- 🌐 Live Demo → https://observation-commitment-protocol.vercel.app/  
+
+Reference implementation (VeraFile):  
+https://github.com/damonzwicker/verafile
+
+---
+
+## Quick Verify
+
+Clone the repo and run:
+
+```bash
+node reference-cli/verify.js examples/example-observation.txt examples/example-proof.ocp.json
+```
+
+Expected output:
+
+VALID: file hash matches proof hash
+
+---
+
+## Status
+
+v1.0.0 — Initial Specification Release
