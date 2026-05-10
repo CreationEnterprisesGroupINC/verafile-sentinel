@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/damonzwicker/observation-commitment-protocol/docs/spec/proof-format-v1.schema.json",
+  "title": "OCP Proof Format v1",
+  "description": "Machine-readable schema for Observation Commitment Protocol proof artifacts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "fileName",
+    "hash",
+    "txHash",
+    "network",
+    "contract",
+    "extractionRule",
+    "timestamp"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "ocp-1"
+    },
+    "fileName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable file or artifact name. Descriptive only; not used for cryptographic verification."
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[a-f0-9]{64}$",
+      "description": "SHA-256 digest of the observation as a 0x-prefixed lowercase hexadecimal string."
+    },
+    "txHash": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{64}$",
+      "description": "Public ledger transaction hash containing the commitment."
+    },
+    "network": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Network identifier where the transaction was recorded, e.g. base-sepolia."
+    },
+    "contract": {
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$",
+      "description": "Contract address or ledger commitment target."
+    },
+    "extractionRule": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Deterministic rule describing how to extract the committed digest from the transaction."
+    },
+    "timestamp": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Producer-supplied timestamp in milliseconds since Unix epoch. Informational only."
+    }
+  }
+}
