@@ -274,6 +274,9 @@ The identity pipeline sentinel hash has been confirmed between two independent i
 8116eec29078e8f57c07077d5e8080a35bde73036581df3abb93755d1b1a16ea
 ```
 
+The full stack is live in production. L3 tx on Base Sepolia, block 41731493:
+https://sepolia.basescan.org/tx/0xc3aeb16d0aef167e2ebc6d4afc9333fcd13a71b8c02e5485bc6be7491e393319
+
 Thread: https://ethereum-magicians.org/t/draft-erc-universal-ai-inference-verification-registry/28083/20
 
 ---
@@ -294,6 +297,7 @@ The network only confirms that a commitment exists.
 - 📄 Core Specification → `/docs/spec/ocp-v1.0.0.md`
 - 🗂️ Proof Envelope → `/docs/spec/ocp-proof-envelope-v1.0.0.md`
 - ⛓️ EVM Extraction Rule → `/docs/spec/appendix-evm-r.md`
+- 🤖 AI Inference Attestation → `/docs/spec/appendix-ai-inference-attestation.md`
 - 🧾 Proof Format → `/docs/spec/proof-format-v1.md`
 - 🔍 Examples → `/examples`
 - ⚙️ Contracts → `/contracts`
@@ -322,4 +326,5 @@ VALID
 
 v1.0.0 — Cross-Chain Primitive  
 Phase 2 complete — EVM reference implementation live  
-Phase 3 in progress — Solana appendix
+Phase 3 in progress — Solana appendix  
+First external contribution merged — dinamic.eth / ERC-8004 (PR #1)
