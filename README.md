@@ -297,6 +297,7 @@ The network only confirms that a commitment exists.
 - 📄 Core Specification → `/docs/spec/ocp-v1.0.0.md`
 - 🗂️ Proof Envelope → `/docs/spec/ocp-proof-envelope-v1.0.0.md`
 - ⛓️ EVM Extraction Rule → `/docs/spec/appendix-evm-r.md`
+- 🔗 Solana Extraction Rule → `/docs/spec/appendix-solana-r.md`
 - 🤖 AI Inference Attestation → `/docs/spec/appendix-ai-inference-attestation.md`
 - 🧾 Proof Format → `/docs/spec/proof-format-v1.md`
 - 🔍 Examples → `/examples`
@@ -325,6 +326,7 @@ VALID
 ## Status
 
 v1.0.0 — Cross-Chain Primitive  
+Phase 1 complete — proof envelope schema  
 Phase 2 complete — EVM reference implementation live  
-Phase 3 in progress — Solana appendix  
+Phase 3 complete — Solana appendix, chain-agnostic claim validated  
 First external contribution merged — dinamic.eth / ERC-8004 (PR #1)
