@@ -28,6 +28,18 @@ If one byte changes, verification fails — across any system.
 
 ## 🔌 Integrate in 2 Minutes
 
+### Install
+
+```bash
+npm install -g ocp-verify
+```
+
+Or use without installing:
+
+```bash
+npx ocp-verify myfile.txt myfile.proof.json
+```
+
 ### 1) Commit (produce a proof)
 
 ```bash
