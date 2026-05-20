@@ -340,7 +340,7 @@ VALID
 v1.0.0 — Cross-Chain Primitive  
 Phase 1 complete — proof envelope schema  
 Phase 2 complete — EVM reference implementation live  
-Phase 3 complete — Solana appendix, chain-agnostic claim validated
+Phase 3 complete — Solana devnet live, Gate 3 verified — same observation committed on EVM and Solana
 Phase 4 complete — ocp-verify published to npm, zero dependencies
 Phase 5 complete — conformance suite, 11/11 tests pass  
 First external contribution merged — dinamic.eth / ERC-8004 (PR #1)

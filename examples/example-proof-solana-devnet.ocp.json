@@ -1,0 +1,30 @@
+{
+  "ocp": "1.0",
+  "chain": {
+    "id": "solana:devnet",
+    "namespace": "solana"
+  },
+  "commitment": {
+    "digest": "14cca453684a18c1ef3e1c0b9a7744cfa06942660719bba373ef5fc36208bf73",
+    "hash_function": "sha2-256",
+    "serialization": "raw-bytes"
+  },
+  "ledger_ref": {
+    "transaction_id": "43B5qatkYp5VZpaxrSCSe4jEHG2NgFpPGi6RdGABD9v3YbBcoCt5faKbrAgxFt4N4QzT69Z5vcnL81jaasRaUcfq",
+    "block_height": 0,
+    "block_hash": "",
+    "finality": {
+      "depth": 0,
+      "assertion_time_utc": "2026-05-20T09:00:00Z",
+      "commitment": "finalized"
+    }
+  },
+  "extraction": {
+    "rule_id": "solana/instruction-data",
+    "rule_version": "1.0.0"
+  },
+  "meta": {
+    "created_utc": "2026-05-20T09:00:00Z",
+    "envelope_version": "1.0"
+  }
+}

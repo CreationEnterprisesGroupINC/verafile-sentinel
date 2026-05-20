@@ -88,7 +88,7 @@ Anchor programs prepend an 8-byte discriminator to all instruction data:
 The discriminator for an instruction named `record_commitment` is:
 
 ```
-discriminator = SHA-256("global:record_commitment")[0..8]
+discriminator = SHA-256("global:record_commitment")[0..8] = 49f0c95bf2609126
 ```
 
 The 32-byte OCP digest follows the discriminator, Borsh-serialized as a fixed `[u8; 32]` array.
@@ -209,7 +209,7 @@ Construct the 40-byte instruction data payload:
 data = discriminator(8 bytes) || H(32 bytes)
 ```
 
-Where `||` denotes concatenation and `discriminator` = `SHA-256("global:record_commitment")[0..8]`.
+Where `||` denotes concatenation and `discriminator` = `SHA-256("global:record_commitment")[0..8] = 49f0c95bf2609126`.
 
 ### Step 4 — Submit the transaction
 
@@ -321,7 +321,7 @@ Confirm that `result.transaction.message.recentBlockhash` matches `ledger_ref.bl
 Compute independently:
 
 ```
-discriminator = SHA-256("global:record_commitment")[0..8]
+discriminator = SHA-256("global:record_commitment")[0..8] = 49f0c95bf2609126
 ```
 
 Do not use a hardcoded value.
