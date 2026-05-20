@@ -132,7 +132,7 @@ The OCP Solana reference program is a minimal Anchor program with a single instr
 ```rust
 use anchor_lang::prelude::*;
 
-declare_id!("OCPrEcordXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+declare_id!("GCXRKzreL2fdYBpnfmKzFqTxE46eGmwQuErMw4uZ1DUL");
 
 #[program]
 pub mod observation_commitment {

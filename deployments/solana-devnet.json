@@ -1,0 +1,14 @@
+{
+  "network": "solana-devnet",
+  "chain_id": "solana:devnet",
+  "deployments": [
+    {
+      "program": "ObservationCommitment",
+      "program_id": "GCXRKzreL2fdYBpnfmKzFqTxE46eGmwQuErMw4uZ1DUL",
+      "deployed_at": "2026-05-20",
+      "discriminator": "49f0c95bf2609126",
+      "note": "Reference deployment — Solana devnet. Gate 3 verified.",
+      "gate3_tx": "43B5qatkYp5VZpaxrSCSe4jEHG2NgFpPGi6RdGABD9v3YbBcoCt5faKbrAgxFt4N4QzT69Z5vcnL81jaasRaUcfq"
+    }
+  ]
+}
