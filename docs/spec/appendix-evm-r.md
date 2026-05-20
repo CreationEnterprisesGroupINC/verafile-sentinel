@@ -1,4 +1,3 @@
-PLACEHOLDER
 # OCP Appendix: EVM Extraction Rule
 
 *Phase 2 deliverable — formal definition of `evm/event-log` for the Observation Commitment Protocol*
@@ -7,7 +6,7 @@ PLACEHOLDER
 
 ## Status
 
-**Draft** — pending Gate 2 validation  
+**Draft** — Gate 2 validated  
 Companion to: `docs/spec/ocp-proof-envelope-v1.0.0.md`  
 Implements: `extraction.rule_id: "evm/event-log"`  
 Next: `docs/spec/appendix-solana-r.md` (Phase 3)
@@ -16,10 +15,16 @@ Next: `docs/spec/appendix-solana-r.md` (Phase 3)
 
 ## Scope
 
-This appendix formally specifies:
+This appendix formally specifies both sides of the OCP commitment cycle for EVM-compatible ledgers:
 
-- The `evm/event-log` extraction rule (`R`) for EVM-compatible ledgers
-- The `ObservationCommitment` reference contract
+**Write side — Commitment Procedure**
+- How an observation is prepared and submitted on-chain
+- The `ObservationCommitment` reference contract interface
+- Serialization, hashing, and encoding rules
+- How the resulting transaction becomes the basis for a proof envelope
+
+**Read side — Extraction Rule**
+- The `evm/event-log` extraction rule (`R`)
 - The canonical verification procedure against raw EVM transaction receipts
 - Finality recommendations for EVM chains
 - Chain ID registry for supported EVM networks
@@ -56,9 +61,131 @@ The contract does nothing except emit an event. It holds no state. It performs n
 
 The digest is emitted as an `indexed` topic, which means it is stored in the transaction receipt's log topics array — not in log data. This is significant for the extraction rule defined below.
 
+**Deployed reference implementation — Base Sepolia:**
+`0x0963Fd33DF80c94360F2DC22e5c09517AeE7ED5c`
+
 ---
 
-## Extraction Rule: `evm/event-log`
+## Write Side: Commitment Procedure
+
+This section formally defines how an observation is committed to an EVM ledger. A conformant commitment produces a transaction from which the digest can be independently extracted using the `evm/event-log` rule defined in the Read Side section below.
+
+### Step 1 — Prepare the observation
+
+The observation is any arbitrary byte sequence. No encoding, framing, or transformation is applied before hashing.
+
+```
+observation ∈ {0,1}*
+```
+
+If the observation is a file, it is read as raw bytes. If it is a string, it is encoded to bytes using a declared encoding (UTF-8 recommended). The encoding must be consistent between commitment and verification — the verifier must apply the same encoding to reproduce the digest.
+
+### Step 2 — Compute the digest
+
+Apply SHA-256 to the raw observation bytes:
+
+```
+H = SHA-256(observation)
+```
+
+- Hash function: `sha2-256`
+- Serialization: `raw-bytes` — no length prefix, no framing, no encoding applied
+- Output: 32 bytes
+
+The digest `H` is the canonical representation of the observation. If a single byte of the observation changes, `H` changes. This is the falsifiability guarantee.
+
+### Step 3 — Encode the digest for submission
+
+Convert `H` to a `bytes32` value for Solidity:
+
+- Raw 32 bytes, no `0x` prefix, no length prefix
+- Lowercase hex when represented as a string
+- This value is passed directly to `record(bytes32 digest)`
+
+### Step 4 — Submit the commitment
+
+Call `record(H)` on a deployed `ObservationCommitment` contract:
+
+```solidity
+ObservationCommitment(contractAddress).record(bytes32(H));
+```
+
+This emits:
+
+```
+Recorded(bytes32 indexed digest, address indexed recorder)
+```
+
+Where:
+- `digest` = `H` — the committed digest, stored as `topics[1]` in the transaction receipt
+- `recorder` = `msg.sender` — the address that submitted the commitment
+
+The transaction is broadcast to the network. Once included in a block, the commitment is permanent and independently verifiable.
+
+### Step 5 — Wait for finality
+
+Wait for the recommended block depth before treating the commitment as final. See Finality Recommendations below.
+
+### Step 6 — Construct the proof envelope
+
+Once finality depth is reached, construct the OCP proof envelope:
+
+```json
+{
+  "ocp": "1.0",
+  "chain": {
+    "id": "<CAIP-2 chain ID>",
+    "namespace": "evm"
+  },
+  "commitment": {
+    "digest": "<H as lowercase hex, no 0x prefix>",
+    "hash_function": "sha2-256",
+    "serialization": "raw-bytes"
+  },
+  "ledger_ref": {
+    "transaction_id": "<0x-prefixed tx hash>",
+    "block_height": <integer>,
+    "block_hash": "<0x-prefixed block hash>",
+    "finality": {
+      "depth": <integer>,
+      "assertion_time_utc": "<ISO 8601>"
+    }
+  },
+  "extraction": {
+    "rule_id": "evm/event-log",
+    "rule_version": "1.0.0"
+  },
+  "meta": {
+    "created_utc": "<ISO 8601>",
+    "envelope_version": "1.0"
+  }
+}
+```
+
+All `ledger_ref` fields are populated from the transaction receipt returned after the `record()` call is confirmed.
+
+### What the committer must NOT do
+
+- Must not apply any encoding, compression, or transformation to the observation before hashing
+- Must not include metadata (filename, timestamp, author) in the hashed data unless those fields are part of the observation by definition
+- Must not submit a digest that was computed from a transformed version of the observation without declaring the transformation in a higher-level layer
+- Must not reuse a proof envelope from a previous commitment for a different observation
+
+### Relation to ERC-8263
+
+ERC-8263 proposes `anchorProof(bytes32 agentId, bytes32 proofHash)` — a two-field interface that includes agent identity in the commitment call.
+
+OCP's `record(bytes32 digest)` is intentionally identity-agnostic. Identity, authorship, and agent binding are explicitly out of scope for OCP — those concerns belong to higher-level layers (e.g., ERC-8004, EIP-712 attestations). OCP commits only the digest.
+
+The two interfaces are complementary:
+- ERC-8263 binds a proof hash to an agent identity on-chain
+- OCP defines how that proof hash is produced, committed, and independently verified
+
+A system implementing both would call `anchorProof(agentId, H)` where `H` is produced according to OCP's commitment procedure, and verify using OCP's extraction rule and proof envelope.
+
+---
+
+## Read Side: Extraction Rule `evm/event-log`
 
 **Rule ID:** `evm/event-log`  
 **Rule version:** `1.0.0`  
@@ -76,34 +203,19 @@ R(receipt) = { topic[1] : log ∈ receipt.logs,
                            len(log.topics) >= 2 }
 ```
 
-Where:
-- `receipt.logs` is the array of log entries in the transaction receipt
-- `log.topics[0]` is the event signature topic (the Keccak-256 hash of the event signature string)
-- `log.topics[1]` is the first indexed parameter — the committed digest
-- The result is a set of `bytes32` values, one per matching log entry
-
 ### Event signature topic
-
-The event signature topic is the Keccak-256 hash of the canonical event signature string:
 
 ```
 keccak256("Recorded(bytes32,address)")
-```
-
-This produces:
-
-```
-0x54c0f9b2b89e41ba0e1087fd2fa2a3efa9dbef7e5af0c2d7e2e8e4b5f08da26
+= 0xdca60c2087041cbb12d9a57628c6cad28ecbd0437e47c7ab6c3aa6e162bf4497
 ```
 
 A verifier must compute this value independently and not hardcode it from an external source.
 
 ### Step-by-step extraction procedure
 
-The following procedure must be applied to raw receipt data. No library, SDK, or provider abstraction is required — only the ability to read raw RLP-decoded receipt structure.
-
 **Step 1 — Obtain raw transaction receipt**  
-Retrieve the transaction receipt for `ledger_ref.transaction_id` from the ledger identified by `chain.id`. The receipt must be obtained from a source the verifier trusts — a full node, an archive node, or a raw block export. RPC providers may be used but introduce a trust dependency that the verifier should note.
+Retrieve the transaction receipt for `ledger_ref.transaction_id` from the ledger identified by `chain.id`. No library, SDK, or provider abstraction is required — only the ability to read raw RLP-decoded receipt structure.
 
 **Step 2 — Confirm block hash**  
 Confirm that the block containing the transaction has hash equal to `ledger_ref.block_hash`. Reject if not equal.
@@ -115,70 +227,63 @@ Iterate over `receipt.logs`. For each log entry:
 - If both conditions hold, this log entry is a match
 
 **Step 4 — Extract digest values**  
-For each matching log entry, take `log.topics[1]` as a raw 32-byte value. This is the committed digest. Collect all such values into the set `S`.
+For each matching log entry, take `log.topics[1]` as a raw 32-byte value. Collect all such values into the set `S`.
 
 **Step 5 — Return S**  
-Return `S` to the envelope verifier. The envelope verifier will confirm that `commitment.digest ∈ S`.
+Return `S` to the envelope verifier. The envelope verifier confirms that `commitment.digest ∈ S`.
 
 ### Raw receipt structure reference
 
-EVM transaction receipts are RLP-encoded. The relevant fields for this extraction rule are:
-
 ```
 TransactionReceipt {
-  ...
   logs: [
     Log {
       address:  <20 bytes>   // contract address that emitted the log
-      topics:   [            // array of 32-byte indexed values
+      topics:   [
         <32 bytes>,          // topics[0]: event signature hash
-        <32 bytes>,          // topics[1]: first indexed param (digest)
-        <32 bytes>,          // topics[2]: second indexed param (recorder address, zero-padded)
+        <32 bytes>,          // topics[1]: committed digest (what R extracts)
+        <32 bytes>,          // topics[2]: recorder address, zero-padded
       ]
-      data:     <bytes>      // non-indexed params (empty for this event)
+      data:     <bytes>      // empty for this event
     }
   ]
 }
 ```
 
-For `ObservationCommitment.Recorded`:
-- `topics[0]` = `keccak256("Recorded(bytes32,address)")` — the event selector
-- `topics[1]` = the committed `bytes32` digest — this is what R extracts
-- `topics[2]` = the `recorder` address, zero-padded to 32 bytes — not used by R
-- `data` = empty (both parameters are indexed)
-
 ### What the verifier must NOT do
 
-- Must not parse `log.data` to find the digest — it is in `topics[1]`, not data
+- Must not parse `log.data` to find the digest — it is in `topics[1]`
 - Must not filter logs by contract address alone — must also match the event signature topic
-- Must not assume a transaction contains exactly one matching log — a transaction may call `record()` multiple times; all matches are included in S
+- Must not assume a transaction contains exactly one matching log
 - Must not accept a match where `log.topics[0]` is absent or does not equal the event signature hash
 
 ---
 
-## Commitment Procedure
+## Full Cycle: Commit → Verify
 
-For reference, the commitment procedure that produces a valid envelope is:
+The complete OCP cycle for an EVM commitment:
 
-1. Read the observation as raw bytes (no encoding applied)
-2. Compute `H = SHA-256(raw bytes)`
-3. Convert `H` to a `bytes32` value (no `0x` prefix, no length prefix)
-4. Call `ObservationCommitment.record(H)` on the target chain
-5. Obtain the transaction receipt
-6. Wait for the recommended finality depth (see below)
-7. Construct the proof envelope with:
-   - `commitment.digest` = lowercase hex of `H`, no `0x` prefix
-   - `commitment.hash_function` = `"sha2-256"`
-   - `commitment.serialization` = `"raw-bytes"`
-   - `extraction.rule_id` = `"evm/event-log"`
-   - `extraction.rule_version` = `"1.0.0"`
-   - All `ledger_ref` fields populated from the receipt
+```
+Observation (raw bytes)
+        ↓
+SHA-256(observation) = H
+        ↓
+record(H) → Recorded(H, recorder) on-chain
+        ↓
+Proof envelope constructed from receipt
+        ↓
+Verifier recomputes H' = SHA-256(observation')
+        ↓
+H' == H  AND  H ∈ R(receipt)
+        ↓
+VALID
+```
+
+If either condition fails, verification fails. No trust assumptions beyond access to a canonical ledger view.
 
 ---
 
 ## Finality Recommendations
-
-Finality on EVM chains is probabilistic. The following depth recommendations represent conservative minimums for general use. Applications with higher security requirements should increase these values.
 
 | Chain | chain.id | Recommended depth | Rationale |
 |---|---|---|---|
@@ -187,13 +292,9 @@ Finality on EVM chains is probabilistic. The following depth recommendations rep
 | Base Sepolia | `eip155:84532` | 3 blocks | Testnet; use for development only |
 | Sepolia | `eip155:11155111` | 6 blocks | Testnet; use for development only |
 
-A depth of `0` is valid in the envelope but indicates the proof was generated before any confirmations. Verifiers must surface this to the caller and must not treat it as a confirmed commitment.
-
 ---
 
 ## Supported Chain Registry
-
-The following EVM chains are formally supported by this appendix. Chains not listed here may be used with this extraction rule but are not covered by OCP conformance testing.
 
 | Network | chain.id | chain.namespace | Status |
 |---|---|---|---|
@@ -205,8 +306,6 @@ The following EVM chains are formally supported by this appendix. Chains not lis
 ---
 
 ## Complete Proof Envelope Example
-
-A conformant proof envelope for a commitment made on Base Sepolia:
 
 ```json
 {
@@ -221,12 +320,12 @@ A conformant proof envelope for a commitment made on Base Sepolia:
     "serialization": "raw-bytes"
   },
   "ledger_ref": {
-    "transaction_id": "0xabc123...",
-    "block_height": 14500000,
-    "block_hash": "0xdef456...",
+    "transaction_id": "0xf2e1f6c085768b4e3d60463717d52bb2a338803a74a4cfd48aea5738d2595ddd",
+    "block_height": 41658348,
+    "block_hash": "0x840e71e7815d501c9ed97a8418f00d30b8b9c79943ded56ea7e12e8dca0ab328",
     "finality": {
       "depth": 3,
-      "assertion_time_utc": "2026-05-17T12:00:00Z"
+      "assertion_time_utc": "2026-05-19T12:00:00Z"
     }
   },
   "extraction": {
@@ -234,43 +333,37 @@ A conformant proof envelope for a commitment made on Base Sepolia:
     "rule_version": "1.0.0"
   },
   "meta": {
-    "created_utc": "2026-05-17T12:00:05Z",
+    "created_utc": "2026-05-19T12:00:05Z",
     "envelope_version": "1.0"
   }
 }
 ```
 
-Note: `commitment.digest` has no `0x` prefix. The existing `proof-format-v1` used a `0x`-prefixed hash field — the envelope format standardizes on no prefix for cross-chain consistency.
-
 ---
 
 ## Relation to existing proof-format-v1
-
-The existing `proof-format-v1.md` and `proof-format-v1.schema.json` describe an earlier, EVM-specific proof format. The mapping between the two formats is:
 
 | proof-format-v1 field | Envelope field | Notes |
 |---|---|---|
 | `hash` | `commitment.digest` | Remove `0x` prefix |
 | `txHash` | `ledger_ref.transaction_id` | Same format |
 | `network` | `chain.id` | Convert to CAIP-2 (e.g. `base-sepolia` → `eip155:84532`) |
-| `contract` | Not in envelope | Contract address is implicit in `extraction.rule_id` |
+| `contract` | Not in envelope | Implicit in `extraction.rule_id` |
 | `extractionRule` | `extraction.rule_id` | Replaced by formal rule registry |
 | `timestamp` | `meta.created_utc` | Convert ms epoch to ISO 8601 |
-| `fileName` | Not in envelope | Descriptive only; out of scope for OCP |
+| `fileName` | Not in envelope | Descriptive only; out of scope |
 | `version` | `ocp` + `meta.envelope_version` | Split into two versioned fields |
-
-The v1 format remains valid for existing proofs. New proofs should use the envelope format.
 
 ---
 
 ## Gate 2 checklist
 
-- [ ] A verifier can extract the digest from a raw Base Sepolia transaction receipt without ethers.js or any EVM library
-- [ ] The event signature topic value can be independently computed from the string `"Recorded(bytes32,address)"`
-- [ ] The extraction procedure correctly handles transactions with multiple `record()` calls
-- [ ] The block hash confirmation step is implemented and tested
-- [ ] At least one real proof envelope has been generated and verified end-to-end against a live Base Sepolia transaction
-- [ ] The finality depth at time of verification is surfaced to the caller, not silently assumed
+- [x] A verifier can extract the digest from a raw Base Sepolia transaction receipt without ethers.js or any EVM library
+- [x] The event signature topic value can be independently computed from the string `"Recorded(bytes32,address)"`
+- [x] The extraction procedure correctly handles transactions with multiple `record()` calls
+- [x] The block hash confirmation step is implemented and tested
+- [x] At least one real proof envelope has been generated and verified end-to-end against a live Base Sepolia transaction
+- [x] The finality depth at time of verification is surfaced to the caller, not silently assumed
 
 ---
 
