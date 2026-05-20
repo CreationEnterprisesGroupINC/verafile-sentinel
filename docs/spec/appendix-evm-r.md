@@ -31,6 +31,15 @@ Key public timestamps:
 
 ERC-8263 was filed May 14, 2026. OCP's write-side implementation and public specification predate this filing by over six weeks.
 
+The reference application implementing the full commit-and-verify cycle 
+(hashFile, anchorHash, createProof, verifyProof) was built and deployed 
+on April 6, 2026. A live proof artifact from April 3, 2026 — predating 
+the ethresear.ch publication — is preserved at:
+examples/ocp-falsification-challenge-april-2026.ocp.json
+
+Transaction: 0x284747d8e6ff559690b3fb548ab5805ac9e96c73775d1ad5b72b83f4a98a8407
+Contract: 0x57ce0d3AfB808B50F23ad1550CC5fa9aa9273859 (Base Sepolia)
+
 ---
 
 ## Scope
