@@ -12,6 +12,7 @@ Implements: extraction.rule_id: "evm/erc-8263"
 TruthAnchor V1 reference implementation of ERC-8263:
 
 - Sepolia: 0x89EE9b68c3b2f50cbE9D0fC4Dc134939a0475c1C
+  (verified source: https://sepolia.etherscan.io/address/0x89EE9b68c3b2f50cbE9D0fC4Dc134939a0475c1C#code)
 - Deploy tx: 0xb15822b519f88cdd0741ed56f2c1cf7710e046a1179477faaad964b959c96a74
 - Ethereum mainnet: pending
 
@@ -28,7 +29,7 @@ R(receipt) = { topics[2] : log in receipt.logs,
                log.topics[0] = keccak256("AnchorProof(uint8,bytes32,bytes32,address,bytes)"),
                len(log.topics) >= 3 }
 
-topics[2] is proofHash — the OCP digest.
+topics[2] is proofHash on the contract layer; OCP treats it as the OCP digest.
 
 ## Why proofHash not aux
 
@@ -38,9 +39,9 @@ Every anchor is an OCP commitment by default.
 
 ## Security Considerations
 
-Frontrunning: any address can anchor any agentId claim. OCP proves digest inclusion only, not authorship.
+Unauthenticated claims: any address can anchor any agentId claim. OCP proves digest inclusion only, not authorship.
 block.timestamp is validator-influenceable by ~12s. Use finality.depth.
-batchAnchor patterns produce multiple events — all matching proofHash values included in S.
+Multi-call patterns (one tx emitting multiple AnchorProof events) — every matching topics[2] is included in S.
 proofHash hashing: contract is algorithm-neutral. Implementations SHOULD use SHA-256 for OCP compatibility.
 
 ## Gate checklist
