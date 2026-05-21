@@ -47,5 +47,5 @@ proofHash hashing: contract is algorithm-neutral. Implementations SHOULD use SHA
 
 - [x] Event signature topic confirmed against deployed bytecode — 0x9fe832d83a52f83bd7d54181e4cc7ff8b4e227cc1d3a0144376894b5df6c23cc matches Sepolia V1 deployment
 - [x] Extraction tested — anchor() tx: 0x51b8531d4f775f847d6073dc863e036d787c2a479c58c96a3f83d2356b471ffb — topics[0] 0x9fe832d8 matches, topics[2] 0xe11404ec matches reported proofHash
-- [ ] anchorWithAux() tested — aux correctly ignored for OCP validity
+- [x] anchorWithAux() tested — aux correctly ignored — tx: 0xa9e7a8fca70472ce32463a6fca07dc82d3a60f9780e386dfea81deaf060da9d4 — topics[2] 0x8474ea4c matches proofHash, aux present in data only
 - [ ] Mainnet contract address confirmed
