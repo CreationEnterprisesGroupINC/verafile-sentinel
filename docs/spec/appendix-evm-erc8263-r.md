@@ -1,6 +1,6 @@
 # OCP Appendix: EVM Extraction Rule for ERC-8263
 
-*Co-authored by Damon Zwicker (OCP) and Vincent Wu (ERC-8263 / TruthAnchor)*
+*Co-authored by Vincent Wu (ERC-8263 / TruthAnchor) and Damon Zwicker (OCP)*
 
 ## Status
 
