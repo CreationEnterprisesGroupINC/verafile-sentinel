@@ -45,7 +45,7 @@ proofHash hashing: contract is algorithm-neutral. Implementations SHOULD use SHA
 
 ## Gate checklist
 
-- [ ] Event signature topic confirmed against deployed bytecode
+- [x] Event signature topic confirmed against deployed bytecode — 0x9fe832d83a52f83bd7d54181e4cc7ff8b4e227cc1d3a0144376894b5df6c23cc matches Sepolia V1 deployment
 - [ ] Extraction tested against real Sepolia anchor() transaction
 - [ ] anchorWithAux() tested — aux correctly ignored for OCP validity
 - [ ] Mainnet contract address confirmed
