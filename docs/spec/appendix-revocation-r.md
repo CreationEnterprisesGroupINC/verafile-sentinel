@@ -118,9 +118,9 @@ The exact encoding of revocation payload metadata is implementation-specific unl
 
 ## Authority Model
 
-For version 0.1.0 of this appendix, revocation authority is restricted to the original commitment publisher.
+For version 0.1.0 of this appendix, revocation authority is verified at the verification layer, not the commitment layer.
 
-A revocation commitment MUST originate from the same authority responsible for the original commitment unless a higher-level extension explicitly defines alternative authorization semantics.
+Any address MAY publish a revocation commitment referencing any prior digest. The commitment contract does not enforce revoker identity. Verifiers are responsible for evaluating whether the revoker address corresponds to the original committer or another authorized authority. This is consistent with OCP's core design principle: the commitment layer records facts, the verification layer interprets them.
 
 Implementations MAY introduce more advanced authority models in future versions, including:
 
@@ -155,7 +155,7 @@ The revocationDigest field binds the revocation event to a revocation payload or
 The revoker field identifies the account publishing the revocation.
 
 The timestamp field records ledger-relative time and MUST be interpreted as chain-provided time, not absolute external time.
-
+Verifiers MUST NOT assume block.timestamp corresponds to wall-clock time within any precision guarantee less than 900 seconds on EVM-compatible networks.
 Implementations MUST treat revocation as additive ledger state. The original commitment remains unchanged.
 
 ## Verification Semantics
@@ -213,7 +213,23 @@ This appendix therefore extends lifecycle interpretation without introducing mut
 
 ## Test Vectors
 
-Example implementations SHOULD include test vectors covering:
+The following test vectors MUST produce consistent results across all conforming implementations.
+
+### Vector 1 — Revocation Digest Construction
+
+Input:
+- originalDigest: `0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`
+- metadata: `{ "reason": "key-compromised", "revokedAt": 1740000000 }`
+
+Expected revocationDigest:
+`0x179c3d35e8fa9f7f646d8557c0d7e7761429690077d3cbd46756c9d70f9ae092`
+
+To verify, run:
+node -e 'const { buildRevocationDigest } = require("./reference-cli/revoke.js"); buildRevocationDigest("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", { reason: "key-compromised", revokedAt: 1740000000 }).then(console.log)'
+
+Expected output: 0x179c3d35e8fa9f7f646d8557c0d7e7761429690077d3cbd46756c9d70f9ae092
+
+Example implementations SHOULD also include test coverage for:
 
 - successful revocation publication
 - duplicate revocation rejection
