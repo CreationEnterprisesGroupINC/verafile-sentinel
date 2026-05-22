@@ -14,7 +14,7 @@ TruthAnchor V1 reference implementation of ERC-8263:
 - Sepolia: 0x89EE9b68c3b2f50cbE9D0fC4Dc134939a0475c1C
   (verified source: https://sepolia.etherscan.io/address/0x89EE9b68c3b2f50cbE9D0fC4Dc134939a0475c1C#code)
 - Deploy tx: 0xb15822b519f88cdd0741ed56f2c1cf7710e046a1179477faaad964b959c96a74
-- Ethereum mainnet: pending
+- Ethereum mainnet: 0xe95d6a15966984c209a62a2c188828555eb5ec3d (deploy tx: 0x4b6d8434651efc13e0820311e94cb38e0fcc21a183c76133bb4c0e63e3b10402)
 
 ## Event Signature Topic
 
@@ -49,4 +49,4 @@ proofHash hashing: contract is algorithm-neutral. Implementations SHOULD use SHA
 - [x] Event signature topic confirmed against deployed bytecode — 0x9fe832d83a52f83bd7d54181e4cc7ff8b4e227cc1d3a0144376894b5df6c23cc matches Sepolia V1 deployment
 - [x] Extraction tested — anchor() tx: 0x51b8531d4f775f847d6073dc863e036d787c2a479c58c96a3f83d2356b471ffb — topics[0] 0x9fe832d8 matches, topics[2] 0xe11404ec matches reported proofHash
 - [x] anchorWithAux() tested — aux correctly ignored — tx: 0xa9e7a8fca70472ce32463a6fca07dc82d3a60f9780e386dfea81deaf060da9d4 — topics[2] 0x8474ea4c matches proofHash, aux present in data only
-- [ ] Mainnet contract address confirmed
+- [x] Mainnet contract address confirmed — 0xe95d6a15966984c209a62a2c188828555eb5ec3d (block 25149664, bytecode identical to Sepolia V1)
