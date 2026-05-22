@@ -1,0 +1,15 @@
+{
+  "network": "base-sepolia",
+  "chain_id": "eip155:84532",
+  "deployments": [
+    {
+      "contract": "OCPRevocation",
+      "address": "0x2fa07c85439850ff6C5688d926bDa6DaEe62Db15",
+      "deployed_at": "2026-05-21",
+      "deployer": "0xdb061866fb40ea42778A86D0fa987946FD8AB0D3",
+      "tx": "0x104a903ec35126ffdc1e0700a4c6427f102132be3d88ffda7015284d61925e6a",
+      "event_topic": "0xc19951599a519bc320c0f352b2f92f315e8a2368bd0efb2e5dca3b1196e76112",
+      "note": "OCPRevocation v0.1.0 — additive revocation commitment layer for OCP"
+    }
+  ]
+}
