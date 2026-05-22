@@ -375,3 +375,25 @@ const status = await verifyWithRevocation(
 
 v1.1.0 — Revocation Extension
 Phase 6 complete — additive revocation primitive, 8/8 conformance tests pass
+
+## Temporal Bounds Extension (v1.2.0)
+
+OCP now includes an optional temporal bounds layer. Derives a finality-bounded existence proof from on-chain state — no oracles, no trusted time servers.
+
+```js
+const { getTemporalBound } = require('ocp-verify/reference-cli/temporal-bounds.js');
+
+const result = await getTemporalBound(txHash, 'eip155:84532');
+// result.upper_bound_iso — observation existed no later than this time
+// result.finalized — whether safe finality depth has been reached
+```
+
+- 📄 Temporal Bounds Spec → `/docs/spec/appendix-temporal-bounds-r.md`
+- ✅ Conformance → `/conformance/temporal-bounds/run-temporal-bounds-conformance.sh`
+
+---
+
+## Status
+
+v1.2.0 — Temporal Bounds Extension
+Phase 7 complete — finality-derived temporal bounds, 8/8 conformance tests pass
