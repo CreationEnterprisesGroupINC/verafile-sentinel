@@ -1,6 +1,6 @@
 {
   "name": "ocp-verify",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Zero-dependency verifier for the Observation Commitment Protocol — independently verify that a file was committed to a public blockchain",
   "license": "MIT",
   "type": "commonjs",

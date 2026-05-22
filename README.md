@@ -345,3 +345,33 @@ Phase 3 complete — Solana devnet live, Gate 3 verified — same observation co
 Phase 4 complete — ocp-verify published to npm, zero dependencies
 Phase 5 complete — conformance suite, 11/11 tests pass  
 First external contribution merged — dinamic.eth / ERC-8004 (PR #1)
+
+
+---
+
+## Revocation Extension (v1.1.0)
+
+OCP now includes an optional revocation layer. Original commitments are never deleted or mutated — revocation is additive, represented as a new on-chain commitment referencing a prior digest.
+
+```js
+const { verifyWithRevocation } = require('ocp-verify/reference-cli/revoke.js');
+
+const status = await verifyWithRevocation(
+  digest,
+  asOfTimestamp,
+  'eip155:84532'
+);
+// returns VALID | REVOKED | NOT_FOUND
+```
+
+- 📄 Revocation Spec → `/docs/spec/appendix-revocation-r.md`
+- ⛓️ Deployed Contract → `0x2fa07c85439850ff6C5688d926bDa6DaEe62Db15` (Base Sepolia)
+- ✅ Revocation Conformance → `/conformance/revocation/run-revocation-conformance.sh`
+- 🔑 Event Topic → `0xc19951599a519bc320c0f352b2f92f315e8a2368bd0efb2e5dca3b1196e76112`
+
+---
+
+## Status
+
+v1.1.0 — Revocation Extension
+Phase 6 complete — additive revocation primitive, 8/8 conformance tests pass
