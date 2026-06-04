@@ -1,0 +1,13 @@
+{
+  "network": "arbitrum-one",
+  "chain_id": "eip155:42161",
+  "deployments": [
+    {
+      "contract": "ObservationCommitment",
+      "address": "0x65884e7db1E57cA2AEf0d66eFcff9c738684B02a",
+      "deployed_at": "2026-06-03",
+      "note": "Reference deployment — Arbitrum One mainnet. evm/event-log extraction rule applies.",
+      "tx": "0x2107f7396634df89f3d33543dd41f58b8090d5a4b1aa77ad989cbf2294455ff0"
+    }
+  ]
+}
