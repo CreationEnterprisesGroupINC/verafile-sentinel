@@ -1,0 +1,22 @@
+{
+  "name": "@verafile/core",
+  "version": "1.0.0",
+  "description": "Verafile Sentinel core — hash, commit, reveal, verify",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "ethers": "^6.0.0",
+    "ocp-verify": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  }
+}
