@@ -1,0 +1,21 @@
+{
+  "name": "@verafile/sentinel-cli",
+  "version": "1.0.0",
+  "description": "Verafile Sentinel CLI — commit, verify, attest",
+  "type": "module",
+  "bin": {
+    "sentinel": "./bin/sentinel.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node bin/sentinel.js"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "ethers": "^6.16.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "typescript": "latest"
+  }
+}
