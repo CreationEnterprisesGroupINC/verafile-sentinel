@@ -1,399 +1,114 @@
-# Observation Commitment Protocol (OCP)
+# Verafile Sentinel
 
-If one byte changes, verification fails — across any chain, any system.
+> **Standing guard against mal-actors across the defense supply chain.**
 
-A chain-agnostic primitive for independently verifying that a specific byte sequence was committed to a public ledger.
-
-Minimal. Verifiable. System-independent.
-
----
-
-## ⚡ 30-Second Demo (start here)
-
-```bash
-cd examples/oh-shit-demo
-./run-demo.sh
-```
-
-Expected:
-
-```
-VALID  
-INVALID  
-```
-
-If one byte changes, verification fails — across any system.
-
----
-
-## 🔌 Integrate in 2 Minutes
-
-### Install
-
-```bash
-npm install -g ocp-verify
-```
-
-Or use without installing:
-
-```bash
-npx ocp-verify myfile.txt myfile.proof.json
-```
-
-### 1) Commit (produce a proof)
-
-```bash
-npx ocp-commit report.txt
-```
-
-This automatically creates:
-
-```bash
-report.proof.json
-```
-
-### 2) Verify (anywhere, later)
-
-```bash
-npx ocp-verify report.txt
-```
-
-Expected:
-
-```
-VALID
-```
-
-If any byte changes:
-
-```
-INVALID: hash mismatch
-```
-
-### 3) Test tampering (optional)
-
-```bash
-npx ocp-verify tampered.txt report.proof.json
-```
-
-### 4) Use in your system
-
-- Save the file + proof together
-- Or store the proof alongside records/logs
-- Verification requires only the file and the proof
-
-No API. No platform dependency.
+Verafile Sentinel is a cryptographic proof-of-integrity system for defense software supply chains. Built on the [Observation Commitment Protocol (OCP/ERC-8281)](https://github.com/damonzwicker/observation-commitment-protocol), Sentinel enables defense contractors to generate tamper-evident, blockchain-anchored proof that any software package, compliance artifact, or CUI-bearing deliverable has not been altered — satisfying CMMC 2.0 Phase 4 continuous attestation requirements without relying on self-reported scores.
 
 ---
 
 ## The Problem
 
-Every AI system running today has the same problem.
+CMMC 2.0 Phase 4 (effective November 10, 2028) mandates that **every DoD contractor and subcontractor** demonstrate continuous, verifiable compliance across all applicable contracts. The framework requires:
 
-You can't verify what it did.
+- Continuous compliance attestation
+- Senior leadership annual affirmations (with False Claims Act exposure)
+- Mandatory notification of any system change touching CUI
+- Subcontractor flowdown verification — with no direct SPRS visibility for prime contractors
 
-Not really. You can ask the platform. You can trust the logs. You can hope the provider is telling the truth. But there is no independent, tamper-proof record of what an AI received, what it produced, and whether anything was changed in between.
+Existing approaches rely on self-attestation, manual documentation, and periodic point-in-time audits. **None of these produce independent, cryptographically verifiable proof.** A C3PAO assessor has no way to confirm a score wasn't fabricated. A prime contractor has no trustless way to verify a subcontractor's compliance posture.
 
-Most digital systems can prove things — but only **inside themselves**.
-
-Step outside the system, and verification depends on:
-- APIs
-- platforms
-- intermediaries
-
-OCP eliminates that dependency entirely.
+Sentinel solves this.
 
 ---
 
-## Where This Breaks Without OCP
+## How It Works
 
-- AI outputs cannot be independently verified
-- Legal evidence depends on originating systems
-- APIs and platforms are non-permanent
-- Digital artifacts become disputable over time
+```
+Software Package / Compliance Artifact
+        │
+        ▼
+[ Hash the Package ]
+  SHA-256 deterministic fingerprint
+        │
+        ▼
+[ Commit to Blockchain via OCP/ERC-8281 ]
+  Timestamped, immutable on-chain observation
+        │
+        ▼
+[ Generate Cryptographic Proof ]
+  OCP reveal mechanism — verifiable by any party
+        │
+        ▼
+[ Embed Proof in Package ]
+  Sidecar proof file + steganographic pixel art
+  encoding the on-chain commitment reference
+        │
+        ▼
+[ Independent Verification ]
+  Re-hash package → fetch on-chain commitment
+  → compare → pass/fail — no Sentinel server required
+```
 
-Without a system-independent verification boundary,
-"what actually happened" becomes ambiguous.
+Verification is **fully independent**. If Verafile ceased to exist tomorrow, every proof anchored to chain remains verifiable forever.
 
 ---
 
-## Use Cases
+## CMMC Phase 4 Coverage
 
-OCP can be used anywhere a digital artifact may need to be independently verified later:
-
-- AI outputs and execution traces
-- Legal evidence and filings
-- Audit logs and compliance records
-- Media provenance
-- File integrity
-- Institutional records
-
-### Example: Verifying an AI Output
-
-An AI system generates a report:
-
-```text
-AI Risk Assessment: MEDIUM_RISK
-Approved for internal review.
-```
-
-That output is committed using OCP.
-
-Later, the report is modified:
-
-```text
-AI Risk Assessment: LOW_RISK
-Approved for internal review.
-```
-
-Using the original proof:
-
-- the original output verifies as VALID
-- the modified output returns INVALID
-
-The difference is one word.
-
-Verification does not depend on the AI system, API, or platform.
-
-It depends only on the bytes.
+| CMMC Requirement | Sentinel Mechanism |
+|---|---|
+| Continuous compliance attestation | Every package state = on-chain timestamped OCP commitment |
+| Senior leadership annual affirmation | Affirmation anchored as signed OCP observation — non-repudiable |
+| System change notification (CUI) | Hash mismatch triggers automatic alert + new commitment required |
+| Subcontractor flowdown verification | Any party verifies independently — no SPRS access required |
+| Audit & Accountability (AU domain) | Full tamper-evident audit trail, cryptographically sequenced |
+| False Claims Act protection | On-chain proof demonstrates good-faith compliance at time of attestation |
 
 ---
 
-## The Protocol
+## Protocol Foundation
 
-An observation is any byte sequence.
+Sentinel is built on **OCP (Observation Commitment Protocol)**, formally designated **ERC-8281** on Ethereum.
 
-```
-data → digest → public commitment
-```
+OCP implements a commit-reveal pattern for trustless observation: an observer commits to having observed a state before revealing what that state was, producing a cryptographic proof that is independently verifiable on-chain without trusting the observer.
 
-Verification reduces to:
-
-```
-recompute → compare → confirm inclusion
-```
-
-A verifier:
-- recomputes the digest
-- compares it to the committed value
-- confirms that the digest exists in a referenced transaction
-
-No API. No platform dependency. No trust in the originating system.
+- **OCP/ERC-8281:** [ethereum/ERCs PR #1788](https://github.com/ethereum/ERCs/pull/1788)
+- **Arbitrum One deployment:** `0x65884e7db1E57cA2AEf0d66eFcff9c738684B02a`
+- **Base Sepolia (testnet):** `0x0963Fd33DF80c94360F2DC22e5c09517AeE7ED5c`
+- **npm:** `ocp-verify`
+- **Stack:** EIP-3668, WYRIWE, ERC-8004, OCP/ERC-8281, VNI, ERC-8275
 
 ---
 
-## Proof Envelope
-
-OCP proofs are self-describing, chain-agnostic JSON artifacts. A valid proof envelope is verifiable against raw ledger data — no SDK, no RPC provider, no indexer required.
-
-```json
-{
-  "ocp": "1.0",
-  "chain": {
-    "id": "eip155:84532",
-    "namespace": "evm"
-  },
-  "commitment": {
-    "digest": "14cca453684a18c1ef3e1c0b9a7744cfa06942660719bba373ef5fc36208bf73",
-    "hash_function": "sha2-256",
-    "serialization": "raw-bytes"
-  },
-  "ledger_ref": {
-    "transaction_id": "0xf2e1f6c085768b4e3d60463717d52bb2a338803a74a4cfd48aea5738d2595ddd",
-    "block_height": 41658348,
-    "block_hash": "0x...",
-    "finality": {
-      "depth": 3,
-      "assertion_time_utc": "2026-05-17T12:00:00Z"
-    }
-  },
-  "extraction": {
-    "rule_id": "evm/event-log",
-    "rule_version": "1.0.0"
-  },
-  "meta": {
-    "created_utc": "2026-05-17T12:00:05Z",
-    "envelope_version": "1.0"
-  }
-}
-```
-
----
-
-## Reference Implementation — Live on Base Sepolia
-
-Contract: `0x0963Fd33DF80c94360F2DC22e5c09517AeE7ED5c`
-
-```solidity
-contract ObservationCommitment {
-    event Recorded(bytes32 indexed digest, address indexed recorder);
-
-    function record(bytes32 digest) external {
-        emit Recorded(digest, msg.sender);
-    }
-}
-```
-
-Live verification — zero dependencies, Node.js stdlib only:
+## Architecture
 
 ```
-  hash      MATCH  14cca453684a18c1ef3e1c0b9a7744cfa06942660719bba373ef5fc36208bf73
-  chain     eip155:84532
-  rpc       https://sepolia.base.org
-  tx        0xf2e1f6c085768b4e3d60463717d52bb2a338803a74a4cfd48aea5738d2595ddd
-  logs      found 1 Recorded event(s)
-  digest    MATCH  14cca453684a18c1ef3e1c0b9a7744cfa06942660719bba373ef5fc36208bf73
-
-VALID
-```
-
----
-
-## What OCP Defines
-
-- A minimal verification model
-- A system-independent verification boundary
-- A portable, self-describing proof envelope (chain-agnostic)
-- A formal extraction rule registry (`evm/event-log`, `solana/instruction-data`)
-
----
-
-## What OCP Does Not Define
-
-- Storage
-- Identity
-- Authorship
-- Canonical encoding
-- Application-layer semantics
-- Sanitization or preprocessing pipelines
-
----
-
-## In the Wild
-
-OCP is being adopted as the Layer 3 commitment primitive in the ERC-8004 Universal AI Inference Verification Registry stack:
-
-```
-L2 — input provenance:  raw → sanitize → commit
-L3 — OCP:              digest → on-chain → verify from raw block
-L4 — EIP-712 signed inference attestation
-L5 — registry routes to zkML / opML / TEE
-```
-
-The identity pipeline sentinel hash has been confirmed between two independent implementations:
-
-```
-8116eec29078e8f57c07077d5e8080a35bde73036581df3abb93755d1b1a16ea
-```
-
-The full stack is live in production. L3 tx on Base Sepolia, block 41731493:
-https://sepolia.basescan.org/tx/0xc3aeb16d0aef167e2ebc6d4afc9333fcd13a71b8c02e5485bc6be7491e393319
-
-Thread: https://ethereum-magicians.org/t/draft-erc-universal-ai-inference-verification-registry/28083/20
-
----
-
-## Why It Matters
-
-OCP separates **verification from systems**.
-
-A verifier does not ask what's true —
-they compute it.
-
-The network only confirms that a commitment exists.
-
----
-
-## Start Here
-
-- 📄 Core Specification → `/docs/spec/ocp-v1.0.0.md`
-- 🗂️ Proof Envelope → `/docs/spec/ocp-proof-envelope-v1.0.0.md`
-- ⛓️ EVM Extraction Rule → `/docs/spec/appendix-evm-r.md`
-- 🔗 Solana Extraction Rule → `/docs/spec/appendix-solana-r.md`
-- 🤖 AI Inference Attestation → `/docs/spec/appendix-ai-inference-attestation.md`
-- 🧾 Proof Format → `/docs/spec/proof-format-v1.md`
-- 🔍 Examples → `/examples`
-- ✅ Conformance Suite → `/conformance/run-conformance.sh`
-- ⚙️ Contracts → `/contracts`
-- 🌐 Live Demo → https://observation-commitment-protocol.vercel.app/
-
-Reference implementation (VeraFile):
-https://github.com/damonzwicker/verafile
-
----
-
-## Quick Verify
-
-```bash
-npx ocp-verify examples/example-observation.txt
-```
-
-Expected output:
-
-```
-VALID
+verafile-sentinel/
+├── packages/
+│   ├── core/          # OCP primitives — hash, commit, reveal
+│   ├── cli/           # verafile-sentinel CLI
+│   ├── sdk/           # SDK for enterprise integrations
+│   └── proofer/       # Proof generation + pixel art embedding
+├── contracts/         # Sentinel-specific smart contracts
+├── docs/              # CMMC domain mapping, compliance specs
+├── examples/          # Reference implementations
+└── README.md
 ```
 
 ---
 
 ## Status
 
-v1.0.0 — Cross-Chain Primitive  
-Phase 1 complete — proof envelope schema  
-Phase 2 complete — EVM reference implementation live  
-Phase 3 complete — Solana devnet live, Gate 3 verified — same observation committed on EVM and Solana
-Phase 4 complete — ocp-verify published to npm, zero dependencies
-Phase 5 complete — conformance suite, 11/11 tests pass  
-First external contribution merged — dinamic.eth / ERC-8004 (PR #1)
-
+> Sentinel is in active development. The protocol foundation (OCP/ERC-8281) is live on Arbitrum One and Base Sepolia. Commercial product development is underway.
 
 ---
 
-## Revocation Extension (v1.1.0)
+## Legal
 
-OCP now includes an optional revocation layer. Original commitments are never deleted or mutated — revocation is additive, represented as a new on-chain commitment referencing a prior digest.
+Verafile Sentinel is proprietary software. All rights reserved.
+© 2026 Verafile / Creation Enterprises Group Inc.
 
-```js
-const { verifyWithRevocation } = require('ocp-verify/reference-cli/revoke.js');
+This repository is private. Unauthorized access, use, reproduction, or distribution is prohibited.
 
-const status = await verifyWithRevocation(
-  digest,
-  asOfTimestamp,
-  'eip155:84532'
-);
-// returns VALID | REVOKED | NOT_FOUND
-```
-
-- 📄 Revocation Spec → `/docs/spec/appendix-revocation-r.md`
-- ⛓️ Deployed Contract → `0x2fa07c85439850ff6C5688d926bDa6DaEe62Db15` (Base Sepolia)
-- ✅ Revocation Conformance → `/conformance/revocation/run-revocation-conformance.sh`
-- 🔑 Event Topic → `0xc19951599a519bc320c0f352b2f92f315e8a2368bd0efb2e5dca3b1196e76112`
-
----
-
-## Status
-
-v1.1.0 — Revocation Extension
-Phase 6 complete — additive revocation primitive, 8/8 conformance tests pass
-
-## Temporal Bounds Extension (v1.2.0)
-
-OCP now includes an optional temporal bounds layer. Derives a finality-bounded existence proof from on-chain state — no oracles, no trusted time servers.
-
-```js
-const { getTemporalBound } = require('ocp-verify/reference-cli/temporal-bounds.js');
-
-const result = await getTemporalBound(txHash, 'eip155:84532');
-// result.upper_bound_iso — observation existed no later than this time
-// result.finalized — whether safe finality depth has been reached
-```
-
-- 📄 Temporal Bounds Spec → `/docs/spec/appendix-temporal-bounds-r.md`
-- ✅ Conformance → `/conformance/temporal-bounds/run-temporal-bounds-conformance.sh`
-
----
-
-## Status
-
-v1.2.0 — Temporal Bounds Extension
-Phase 7 complete — finality-derived temporal bounds, 8/8 conformance tests pass
+The underlying protocol (OCP/ERC-8281) is open source under MIT license.
+Sentinel's commercial implementation built on top of OCP is not open source.
