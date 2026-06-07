@@ -1,0 +1,21 @@
+{
+  "name": "@verafile/sentinel-sdk",
+  "version": "1.0.0",
+  "description": "Verafile Sentinel SDK — enterprise integration layer",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "ethers": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  }
+}
