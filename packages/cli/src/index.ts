@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { commitCommand } from "./commands/commit.js";
 import { verifyCommand } from "./commands/verify.js";
 import { attestCommand } from "./commands/attest.js";
+import { reportCommand } from "./commands/report.js";
 
 const program = new Command();
 
@@ -13,5 +14,6 @@ program
 program.addCommand(commitCommand);
 program.addCommand(verifyCommand);
 program.addCommand(attestCommand);
+program.addCommand(reportCommand);
 
 program.parse(process.argv);
