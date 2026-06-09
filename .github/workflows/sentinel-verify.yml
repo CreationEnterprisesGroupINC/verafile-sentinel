@@ -1,0 +1,52 @@
+name: Verafile Sentinel — Verify Integrity
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      proof_path:
+        description: 'Path to sentinel.proof.json'
+        required: true
+      directory:
+        description: 'Directory to verify'
+        required: true
+        default: 'dist'
+
+jobs:
+  sentinel-verify:
+    name: Verify software integrity against blockchain
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Sentinel CLI
+        run: |
+          cd packages/cli && npm install && npm run build
+          cd ../core && npm install && npm run build
+
+      - name: Verify integrity
+        env:
+          SENTINEL_RPC_URL: ${{ secrets.SENTINEL_RPC_URL }}
+        run: |
+          PROOF="${{ github.event.inputs.proof_path || 'sentinel-proof/sentinel.proof.json' }}"
+          DIR="${{ github.event.inputs.directory || 'dist' }}"
+
+          if [ ! -f "$PROOF" ]; then
+            echo "No proof file found at $PROOF — skipping verification"
+            exit 0
+          fi
+
+          node packages/cli/dist/index.js verify $DIR $PROOF
+
+      - name: Post result to PR
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "## 🛡 Sentinel Integrity Check" >> $GITHUB_STEP_SUMMARY
+          echo "Verification complete. See logs above for PASS/FAIL status." >> $GITHUB_STEP_SUMMARY
