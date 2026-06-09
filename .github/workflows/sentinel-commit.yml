@@ -1,0 +1,124 @@
+name: Verafile Sentinel — Software Integrity Commit
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      directory:
+        description: 'Directory to commit (default: dist/)'
+        required: false
+        default: 'dist'
+
+jobs:
+  sentinel-commit:
+    name: Seal release artifacts to blockchain
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Sentinel CLI
+        run: |
+          cd packages/cli
+          npm install
+          npm run build
+          cd ../core
+          npm install
+          npm run build
+          cd ../proofer
+          npm install
+          npm run build
+
+      - name: Generate SBOM
+        run: |
+          # Generate a basic SBOM from package-lock.json if it exists
+          if [ -f "package-lock.json" ]; then
+            node -e "
+              const lock = require('./package-lock.json');
+              const components = Object.entries(lock.packages || {})
+                .filter(([name]) => name.startsWith('node_modules/'))
+                .map(([name, info]) => ({
+                  name: name.replace('node_modules/', ''),
+                  version: info.version || 'unknown'
+                }));
+              const sbom = {
+                bomFormat: 'CycloneDX',
+                specVersion: '1.4',
+                metadata: {
+                  timestamp: new Date().toISOString(),
+                  component: {
+                    name: '${{ github.repository }}',
+                    version: '${{ github.ref_name }}'
+                  }
+                },
+                components
+              };
+              require('fs').writeFileSync('sbom.json', JSON.stringify(sbom, null, 2));
+              console.log('Generated SBOM with ' + components.length + ' components');
+            "
+          else
+            echo '{"bomFormat":"CycloneDX","specVersion":"1.4","components":[]}' > sbom.json
+            echo "No package-lock.json found — empty SBOM generated"
+          fi
+
+      - name: Determine commit directory
+        id: dirs
+        run: |
+          DIR="${{ github.event.inputs.directory || 'dist' }}"
+          if [ ! -d "$DIR" ]; then
+            echo "Directory $DIR not found — using repository root"
+            DIR="."
+          fi
+          echo "dir=$DIR" >> $GITHUB_OUTPUT
+          echo "Committing directory: $DIR"
+
+      - name: Commit to blockchain
+        env:
+          SENTINEL_PRIVATE_KEY: ${{ secrets.SENTINEL_PRIVATE_KEY }}
+          SENTINEL_RPC_URL: ${{ secrets.SENTINEL_RPC_URL }}
+        run: |
+          node packages/cli/dist/index.js sbom ${{ steps.dirs.outputs.dir }} \
+            --sbom sbom.json \
+            --output ./sentinel-proof \
+            --software-name "${{ github.repository }}" \
+            --software-version "${{ github.ref_name }}"
+
+      - name: Upload proof artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-proof-${{ github.ref_name }}
+          path: sentinel-proof/
+          retention-days: 3650
+
+      - name: Attach proof to release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            sentinel-proof/sentinel.proof.json
+            sentinel-proof/sentinel-proof-report.pdf
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Print summary
+        run: |
+          echo "## 🛡 Verafile Sentinel — Integrity Committed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Software package sealed to Arbitrum One blockchain." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f sentinel-proof/sentinel.proof.json ]; then
+            TX=$(node -e "const p=require('./sentinel-proof/sentinel.proof.json'); console.log(p.commitment?.tx_hash || 'pending')")
+            ROOT=$(node -e "const p=require('./sentinel-proof/sentinel.proof.json'); console.log(p.root_hash || 'pending')")
+            echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Transaction | \`$TX\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Root Hash | \`$ROOT\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Verify | [Arbiscan](https://arbiscan.io/tx/$TX) |" >> $GITHUB_STEP_SUMMARY
+          fi

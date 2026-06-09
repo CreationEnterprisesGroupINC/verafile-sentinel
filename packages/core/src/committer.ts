@@ -16,8 +16,8 @@ const ARBITRUM_ONE_CHAIN_ID = 42161;
 
 // Minimal OCP ABI — observe function only
 const OCP_ABI = [
-  "function observe(bytes32 hash) external returns (uint256 id)",
-  "event Observed(uint256 indexed id, bytes32 indexed hash, address indexed observer, uint256 timestamp)"
+  "function record(bytes32 digest) external",
+  "event Recorded(bytes32 indexed digest, address indexed recorder)"
 ];
 
 export async function commitToChain(
@@ -30,10 +30,10 @@ export async function commitToChain(
   const contract = new ethers.Contract(OCP_CONTRACT, OCP_ABI, wallet);
 
   // Strip "sha256:" prefix, convert to bytes32
-  const hashHex = rootHash.replace("sha256:", "");
-  const hashBytes = ethers.zeroPadValue("0x" + hashHex, 32);
+  const hashHex = rootHash.replace("sha256:", "").padStart(64, "0");
+  const hashBytes = ("0x" + hashHex) as `0x${string}`;
 
-  const tx = await contract.observe(hashBytes);
+  const tx = await contract.record(hashBytes);
   const receipt = await tx.wait();
 
   const block = await provider.getBlock(receipt.blockNumber);

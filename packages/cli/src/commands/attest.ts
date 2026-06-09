@@ -28,9 +28,9 @@ export const attestCommand = new Command("attest")
     console.log(`⛓  Submitting attestation to Arbitrum One...`);
 
     try {
-      const corePath = new URL("../../core/src/committer.js", import.meta.url).pathname;
-      const prooferBundlerPath = new URL("../../proofer/src/bundler.js", import.meta.url).pathname;
-      const prooferStegoPath = new URL("../../proofer/src/steganographer.js", import.meta.url).pathname;
+      const corePath = new URL("../../../core/dist/committer.js", import.meta.url).pathname;
+      const prooferBundlerPath = new URL("../../../proofer/dist/bundler.js", import.meta.url).pathname;
+      const prooferStegoPath = new URL("../../../proofer/dist/steganographer.js", import.meta.url).pathname;
 
       const { commitToChain } = await import(corePath);
       const commitment = await commitToChain(manifest.root, privateKey, rpcUrl);
