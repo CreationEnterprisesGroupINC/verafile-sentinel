@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { ethers } from "ethers";
 
-const OCP_CONTRACT = "0x65884e7db1E57cA2AEf0d66eFcff9c738684B02a";
-const OCP_ABI = ["function record(bytes32 digest) external"];
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +13,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
 
-    // Hash each file
     const manifest: { path: string; hash: string }[] = [];
     for (const file of files) {
       const buffer = Buffer.from(await file.arrayBuffer());
@@ -22,20 +20,20 @@ export async function POST(req: NextRequest) {
       manifest.push({ path: file.name, hash });
     }
 
-    // Sort for determinism
     manifest.sort((a, b) => a.path.localeCompare(b.path));
 
-    // Merkle root
     const combined = manifest.map(e => e.path + ":" + e.hash).join("|");
     const rootHash = "sha256:" + createHash("sha256").update(combined).digest("hex");
 
-    // Commit to blockchain
     const privateKey = process.env.SENTINEL_PRIVATE_KEY;
     const rpcUrl = process.env.SENTINEL_RPC_URL;
 
     if (!privateKey || !rpcUrl) {
       return NextResponse.json({ error: "Server not configured" }, { status: 500 });
     }
+
+    const OCP_CONTRACT = "0x65884e7db1E57cA2AEf0d66eFcff9c738684B02a";
+    const OCP_ABI = ["function record(bytes32 digest) external"];
 
     const provider = new ethers.JsonRpcProvider(rpcUrl);
     const wallet = new ethers.Wallet(privateKey, provider);
@@ -66,7 +64,7 @@ export async function POST(req: NextRequest) {
       },
       verification: {
         instructions: "Re-hash files sorted alphabetically. Compare root hash against blockchain.",
-        independent_verifier: `https://arbiscan.io/tx/${receipt.hash}`,
+        independent_verifier: "https://arbiscan.io/tx/" + receipt.hash,
       },
     };
 
