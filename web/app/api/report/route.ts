@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
   const pdfBytes = await renderReport({ proof, org, docType, practices });
 
   const safeOrg = org.replace(/[^a-zA-Z0-9-_]+/g, "-").slice(0, 60) || "organization";
-  return new NextResponse(pdfBytes, {
+  return new NextResponse(Buffer.from(pdfBytes), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",

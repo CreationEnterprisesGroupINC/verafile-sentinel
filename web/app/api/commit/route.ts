@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
     // Position of our event within the receipt's log array (zero-indexed).
     // This is the receipt-array position, NOT the block-scoped JSON-RPC logIndex.
     const receiptLogPosition = receipt.logs.findIndex(
-      (l) => l.address.toLowerCase() === OCP_CONTRACT.toLowerCase()
+      (l: any) => l.address.toLowerCase() === OCP_CONTRACT.toLowerCase()
     );
 
     const proof = {
