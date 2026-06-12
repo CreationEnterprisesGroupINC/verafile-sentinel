@@ -1,0 +1,349 @@
+// app/api/report/route.ts
+//
+// Generates the CMMC compliance proof report PDF from a sentinel proof JSON.
+// Server-side only (pdfkit), no React dependency. Vercel note: pdfkit's
+// standard fonts load .afm data files from node_modules at runtime; Next's
+// output file tracing drops them unless next.config.mjs includes the
+// outputFileTracingIncludes entry shipped alongside this file. Without it,
+// this route works locally and crashes only in production.
+
+import { NextRequest, NextResponse } from "next/server";
+import PDFDocument from "pdfkit";
+import { MAPPING, STATUS_LEGEND, isDocumentType, PracticeStatus } from "@/lib/cmmc-mapping";
+
+export const runtime = "nodejs";
+export const maxDuration = 30;
+
+// ---------------------------------------------------------------------------
+// Palette (matches the app)
+// ---------------------------------------------------------------------------
+const NAVY = "#1A3A6B";
+const DARK = "#0A1628";
+const GREEN = "#1A7A3A";
+const GRAY = "#6B7280";
+const LIGHT_GRAY = "#94A3B8";
+const RULE = "#E2E8F0";
+const AMBER = "#92600A";
+
+interface ProofBody {
+  sentinel_version?: string;
+  package?: { organization?: string; document_type?: string };
+  root_hash?: string;
+  salt?: string;
+  manifest?: { path: string; hash: string }[];
+  chain?: { name?: string; chain_id?: number; contract?: string };
+  commitment?: {
+    tx_hash?: string;
+    block_number?: number;
+    block_timestamp?: string | null;
+    committer_address?: string;
+    receipt_log_position?: number | null;
+  };
+  verification?: { instructions?: string; independent_explorer?: string };
+  assessment_period?: string; // optional, may be supplied by the caller
+}
+
+function bad(msg: string) {
+  return NextResponse.json({ error: msg }, { status: 400 });
+}
+
+export async function POST(req: NextRequest) {
+  let proof: ProofBody;
+  try {
+    proof = await req.json();
+  } catch {
+    return bad("Request body must be the sentinel proof JSON");
+  }
+
+  const org = proof.package?.organization?.trim();
+  const docType = proof.package?.document_type;
+  const manifest = proof.manifest;
+  const c = proof.commitment;
+
+  if (!org) return bad("Proof is missing package.organization");
+  if (!isDocumentType(docType)) return bad("Proof is missing or has an invalid package.document_type");
+  if (!Array.isArray(manifest) || manifest.length === 0) return bad("Proof is missing manifest");
+  if (!c?.tx_hash || c.block_number === undefined) return bad("Proof is missing commitment details");
+  if (!proof.root_hash) return bad("Proof is missing root_hash");
+
+  const practices = MAPPING[docType];
+  const pdf = await renderReport({ proof, org, docType, practices });
+
+  const safeOrg = org.replace(/[^a-zA-Z0-9-_]+/g, "-").slice(0, 60) || "organization";
+  return new NextResponse(new Uint8Array(pdf), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${safeOrg}-sentinel-cmmc-report.pdf"`,
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+
+function renderReport(args: {
+  proof: ProofBody;
+  org: string;
+  docType: string;
+  practices: { id: string; title: string; status: PracticeStatus; role: string }[];
+}): Promise<Buffer> {
+  const { proof, org, docType, practices } = args;
+  const c = proof.commitment!;
+
+  return 
+new Promise((resolve, reject) => {
+    process.env.NODE_PATH = require("path").join(require.resolve("pdfkit"), "..", "..", "js", "data");
+    const doc = new PDFDocument({
+      size: "LETTER",
+      margins: { top: 56, bottom: 64, left: 56, right: 56 },
+      info: {
+        Title: `Verafile Sentinel — CMMC Compliance Proof Report — ${org}`,
+        Author: "Verafile Sentinel",
+        Subject: "Blockchain-anchored artifact integrity evidence (ERC-8281 / OCP)",
+      },
+    });
+
+    const chunks: Buffer[] = [];
+    doc.on("data", (d: Buffer) => chunks.push(d));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    const W = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const X = doc.page.margins.left;
+
+    // --- Header band ---------------------------------------------------------
+    doc.rect(0, 0, doc.page.width, 8).fill(NAVY);
+    doc.moveDown(0.5);
+    doc.fillColor(NAVY).font("Helvetica-Bold").fontSize(20).text("Verafile Sentinel", X, 36);
+    doc
+      .fillColor(GRAY)
+      .font("Helvetica")
+      .fontSize(10)
+      .text("CMMC Level 2 Compliance Proof Report", X, 60);
+    doc
+      .fontSize(8)
+      .fillColor(LIGHT_GRAY)
+      .text("Blockchain-anchored artifact integrity evidence — ERC-8281 (Observation Commitment Protocol)", X, 74);
+    hr(doc, X, 92, W);
+
+    // --- Report metadata -----------------------------------------------------
+    let y = 104;
+    y = kv(doc, X, y, W, "Organization", org);
+    y = kv(doc, X, y, W, "Document type", docType);
+    y = kv(doc, X, y, W, "Report date", new Date().toISOString().slice(0, 10) + " (UTC)");
+    y = kv(
+      doc,
+      X,
+      y,
+      W,
+      "Assessment period",
+      proof.assessment_period?.trim() || "Not specified — see anchor timestamp below"
+    );
+    y = kv(doc, X, y, W, "Sentinel version", proof.sentinel_version || "—");
+    y += 6;
+
+    // --- Anchor details ------------------------------------------------------
+    y = sectionTitle(doc, X, y, "Blockchain anchor");
+    y = kvMono(doc, X, y, W, "Network", `${proof.chain?.name ?? "arbitrum-one"} (chain ID ${proof.chain?.chain_id ?? 42161})`);
+    y = kvMono(doc, X, y, W, "Contract", proof.chain?.contract ?? "—");
+    y = kvMono(doc, X, y, W, "Transaction", c.tx_hash!);
+    y = kvMono(doc, X, y, W, "Block", String(c.block_number));
+    y = kvMono(doc, X, y, W, "Anchor timestamp (UTC)", c.block_timestamp ?? "—");
+    y = kvMono(doc, X, y, W, "Committer", `${c.committer_address ?? "—"}  (Verafile Sentinel service address, operated on behalf of ${org})`);
+    y = kvMono(doc, X, y, W, "Root hash", proof.root_hash!);
+    doc
+      .font("Helvetica")
+      .fontSize(8)
+      .fillColor(NAVY)
+      .text("Public record: " + (proof.verification?.independent_explorer ?? `https://arbiscan.io/tx/${c.tx_hash}`), X, y, {
+        width: W,
+        link: proof.verification?.independent_explorer ?? `https://arbiscan.io/tx/${c.tx_hash}`,
+        underline: true,
+      });
+    y = doc.y + 10;
+
+    // --- Files anchored ------------------------------------------------------
+    y = sectionTitle(doc, X, y, `Files anchored (${proof.manifest!.length})`);
+    doc.y = y;
+    for (const entry of proof.manifest!) {
+      ensureRoom(doc, 26);
+      doc.font("Helvetica-Bold").fontSize(8.5).fillColor(DARK).text(entry.path, X, doc.y, { width: W });
+      doc.font("Courier").fontSize(7).fillColor(GRAY).text(entry.hash, X + 12, doc.y, { width: W - 12 });
+      doc.moveDown(0.45);
+    }
+    doc.moveDown(0.4);
+
+    // --- CMMC practices evidenced -------------------------------------------
+    ensureRoom(doc, 80);
+    doc.y = sectionTitle(doc, X, doc.y, "CMMC Level 2 practices evidenced");
+    doc
+      .font("Helvetica")
+      .fontSize(8)
+      .fillColor(GRAY)
+      .text(
+        "Relationship categories follow the Verafile Sentinel CMMC L2 Mapping (v1.1). No single product satisfies a CMMC practice by being purchased; practices are organizational requirements assessed against NIST SP 800-171A objectives.",
+        X,
+        doc.y,
+        { width: W }
+      );
+    doc.moveDown(0.6);
+
+    for (const pr of practices) {
+      ensureRoom(doc, 70);
+      const rowY = doc.y;
+      drawCheck(doc, X + 2, rowY + 2);
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(9.5)
+        .fillColor(DARK)
+        .text(`${pr.id} — ${pr.status}`, X + 18, rowY, { width: W - 18 });
+      doc
+        .font("Helvetica-Oblique")
+        .fontSize(8)
+        .fillColor(GRAY)
+        .text(pr.title, X + 18, doc.y + 1, { width: W - 18 });
+      doc
+        .font("Helvetica")
+        .fontSize(8.5)
+        .fillColor(DARK)
+        .text(pr.role, X + 18, doc.y + 3, { width: W - 18 });
+      doc.moveDown(0.7);
+    }
+
+    // Status legend
+    ensureRoom(doc, 64);
+    doc.font("Helvetica-Bold").fontSize(8).fillColor(GRAY).text("Category definitions", X, doc.y, { width: W });
+    for (const [status, def] of Object.entries(STATUS_LEGEND)) {
+      ensureRoom(doc, 22);
+      doc
+        .font("Helvetica")
+        .fontSize(7.5)
+        .fillColor(GRAY)
+        .text(`${status}: ${def}`, X, doc.y + 2, { width: W });
+    }
+    doc.moveDown(0.8);
+
+    // --- Verification statement ----------------------------------------------
+    ensureRoom(doc, 120);
+    doc.y = sectionTitle(doc, X, doc.y, "Independent verification");
+    doc
+      .font("Helvetica")
+      .fontSize(8.5)
+      .fillColor(DARK)
+      .text(
+        "This proof is verifiable by any third party — including a C3PAO assessor — using only public blockchain data. " +
+          "No Verafile software, account, or cooperation is required, and verification does not depend on Verafile's continued existence. " +
+          "Procedure: (1) compute the SHA-256 digest of each anchored file; (2) sort entries by filename and reconstruct the root preimage using the salt retained in the proof JSON; " +
+          "(3) compute the SHA-256 root and confirm it matches the root hash above; (4) confirm the root hash appears in the referenced transaction's event log on Arbitrum One, " +
+          "emitted by the contract address above. Any RPC endpoint or block explorer suffices; for evidentiary use, cross-check a second independent endpoint. " +
+          "The salt in the retained proof JSON is required for verification — treat the proof JSON as part of the evidence record and include it in backups.",
+        X,
+        doc.y,
+        { width: W, align: "justify" }
+      );
+    doc.moveDown(0.8);
+
+    // --- What this proof establishes / does not establish ----------------------
+    ensureRoom(doc, 110);
+    doc.y = sectionTitle(doc, X, doc.y, "Scope of this evidence");
+    doc
+      .font("Helvetica")
+      .fontSize(8.5)
+      .fillColor(DARK)
+      .text(
+        "This anchor establishes that the files listed above existed, in exactly the states identified by their digests, no later than the anchor timestamp, " +
+          "and that any subsequent modification is cryptographically detectable. It does not independently establish when the underlying events occurred " +
+          "(an anchor bounds when an artifact existed, not when the activity it documents took place), does not evaluate the content of the documents, " +
+          "and does not constitute CMMC certification or assessment. Practice satisfaction is determined by the organization's implementation as a whole " +
+          "and assessed by the cognizant C3PAO against NIST SP 800-171A objectives.",
+        X,
+        doc.y,
+        { width: W, align: "justify" }
+      );
+    doc.moveDown(0.8);
+
+    // --- Disclaimer ------------------------------------------------------------
+    ensureRoom(doc, 70);
+    doc
+      .font("Helvetica-Oblique")
+      .fontSize(7.5)
+      .fillColor(AMBER)
+      .text(
+        "Disclaimer: This report is generated documentation accompanying a cryptographic proof; it is not compliance, legal, or certification advice, " +
+          "and it has not been reviewed by an assessor. The cryptographic proof — not this report — is the evidence. Anchoring was performed via a v0 OCP " +
+          "contract deployment; this proof verifies via the documented procedure above and will be supplemented with ERC-8281 (erc8281/1) conformant envelopes " +
+          "following the v1 contract deployment.",
+        X,
+        doc.y,
+        { width: W, align: "justify" }
+      );
+
+    // --- Footer with page numbers ----------------------------------------------
+    const range = doc.bufferedPageRange();
+    for (let i = range.start; i < range.start + range.count; i++) {
+      doc.switchToPage(i);
+      doc
+        .font("Helvetica")
+        .fontSize(7)
+        .fillColor(LIGHT_GRAY)
+        .text(
+          `Verafile Sentinel — ${org} — ${docType}    |    Page ${i + 1} of ${range.count}`,
+          X,
+          doc.page.height - 44,
+          { width: W, align: "center", lineBreak: false }
+        );
+    }
+
+    doc.end();
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Drawing helpers
+// ---------------------------------------------------------------------------
+
+function hr(doc: PDFKit.PDFDocument, x: number, y: number, w: number) {
+  doc.save().moveTo(x, y).lineTo(x + w, y).lineWidth(0.7).strokeColor(RULE).stroke().restore();
+}
+
+function sectionTitle(doc: PDFKit.PDFDocument, x: number, y: number, title: string): number {
+  doc.font("Helvetica-Bold").fontSize(11).fillColor(NAVY).text(title.toUpperCase(), x, y, { characterSpacing: 0.4 });
+  const ny = doc.y + 3;
+  hr(doc, x, ny, doc.page.width - doc.page.margins.left - doc.page.margins.right);
+  return ny + 8;
+}
+
+function kv(doc: PDFKit.PDFDocument, x: number, y: number, w: number, k: string, v: string): number {
+  doc.font("Helvetica-Bold").fontSize(9).fillColor(GRAY).text(k, x, y, { width: 130, lineBreak: false });
+  doc.font("Helvetica").fontSize(9).fillColor(DARK).text(v, x + 140, y, { width: w - 140 });
+  return Math.max(doc.y, y + 13) + 2;
+}
+
+function kvMono(doc: PDFKit.PDFDocument, x: number, y: number, w: number, k: string, v: string): number {
+  doc.font("Helvetica-Bold").fontSize(8.5).fillColor(GRAY).text(k, x, y, { width: 130, lineBreak: false });
+  doc.font("Courier").fontSize(8).fillColor(DARK).text(v, x + 140, y, { width: w - 140 });
+  return Math.max(doc.y, y + 12) + 2;
+}
+
+// Vector checkmark — deliberate: the U+2713 glyph is not in pdfkit's standard
+// WinAnsi fonts and renders as garbage; drawing it is the reliable path.
+function drawCheck(doc: PDFKit.PDFDocument, x: number, y: number) {
+  doc
+    .save()
+    .lineWidth(1.6)
+    .strokeColor(GREEN)
+    .moveTo(x, y + 4)
+    .lineTo(x + 3.5, y + 7.5)
+    .lineTo(x + 10, y)
+    .stroke()
+    .restore();
+}
+
+function ensureRoom(doc: PDFKit.PDFDocument, needed: number) {
+  if (doc.y + needed > doc.page.height - doc.page.margins.bottom) {
+    doc.addPage();
+  }
+}
