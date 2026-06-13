@@ -1,7 +1,9 @@
-// app/api/commit/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createHash, randomBytes } from "crypto";
 import { ethers } from "ethers";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { enforceAnchorLimit, recordAnchor } from "@/lib/usage";
 import { isDocumentType } from "@/lib/cmmc-mapping";
 
 export const maxDuration = 60;
@@ -11,6 +13,48 @@ const OCP_CONTRACT = "0x65884e7db1E57cA2AEf0d66eFcff9c738684B02a";
 const OCP_ABI = ["function record(bytes32 digest) external"];
 
 export async function POST(req: NextRequest) {
+  // -------------------------------------------------------------------------
+  // 1. Authentication
+  // -------------------------------------------------------------------------
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: "unauthorized", message: "Sign in required." },
+      { status: 401 }
+    );
+  }
+  const userId = session.user.id;
+
+  // -------------------------------------------------------------------------
+  // 2. Server-side usage enforcement
+  // -------------------------------------------------------------------------
+  const gate = await enforceAnchorLimit(userId);
+  if (!gate.user) {
+    return NextResponse.json(
+      { error: "user_not_found", message: "Account not found." },
+      { status: 404 }
+    );
+  }
+  if (!gate.allowed) {
+    return NextResponse.json(
+      {
+        error: "anchor_limit_reached",
+        plan: gate.user.plan,
+        limit: gate.user.anchor_limit,
+        upgradeUrl: "/pricing",
+      },
+      { status: 402 }
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // 3. Parse request and anchor
+  // -------------------------------------------------------------------------
+  let txHash: string | null = null;
+  let blockNumber: number | null = null;
+  let rootHash: string | null = null;
+  let anchorResponse: Record<string, unknown>;
+
   try {
     const formData = await req.formData();
     const files = formData.getAll("files") as File[];
@@ -38,19 +82,10 @@ export async function POST(req: NextRequest) {
     }
     manifest.sort((a, b) => a.path.localeCompare(b.path));
 
-    // Per-package salt (hiding). The on-chain digest of a predictable document
-    // set is a dictionary/confirmation-attack target; a high-entropy salt in
-    // the root preimage means the public digest leaks nothing about content.
-    // The salt is returned in the proof JSON, which the customer retains
-    // privately — LOSING THE PROOF JSON MEANS LOSING THE SALT, and a lost
-    // salt makes the anchor permanently unverifiable. The UI says this.
     const salt = randomBytes(32).toString("hex");
-
-    // Root preimage (exact recipe, also stated in verification.instructions):
-    //   salt + "|" + ("path:sha256:<hex>" entries, sorted by path, joined "|")
     const combined = salt + "|" + manifest.map((e) => e.path + ":" + e.hash).join("|");
     const rootHashHex = createHash("sha256").update(combined).digest("hex");
-    const rootHash = "sha256:" + rootHashHex;
+    rootHash = "sha256:" + rootHashHex;
 
     const privateKey = process.env.SENTINEL_PRIVATE_KEY;
     const rpcUrl = process.env.SENTINEL_RPC_URL;
@@ -71,13 +106,14 @@ export async function POST(req: NextRequest) {
     }
     const block = await provider.getBlock(receipt.blockNumber);
 
-    // Position of our event within the receipt's log array (zero-indexed).
-    // This is the receipt-array position, NOT the block-scoped JSON-RPC logIndex.
     const receiptLogPosition = receipt.logs.findIndex(
       (l: any) => l.address.toLowerCase() === OCP_CONTRACT.toLowerCase()
     );
 
-    const proof = {
+    txHash = receipt.hash;
+    blockNumber = receipt.blockNumber;
+
+    anchorResponse = {
       sentinel_version: "1.1.0",
       proof_type: "ocp-erc8281-v0",
       package: {
@@ -85,7 +121,7 @@ export async function POST(req: NextRequest) {
         document_type: documentType,
       },
       root_hash: rootHash,
-      salt, // retain privately; required to re-derive the root from the files
+      salt,
       manifest,
       chain: {
         name: "arbitrum-one",
@@ -99,12 +135,6 @@ export async function POST(req: NextRequest) {
         committer_address: wallet.address,
         receipt_log_position: receiptLogPosition >= 0 ? receiptLogPosition : null,
       },
-      // ERC-8281 alignment block. Honesty note: the deployed contract is a v0
-      // OCP deployment that predates the final ERC-8281 event signature
-      // (Recorded(bytes32,address)), so this proof is NOT a conformant
-      // erc8281/1 envelope and ocp-verify will not accept it. It remains
-      // independently verifiable via the documented procedure below. Fully
-      // conformant envelopes ship with the v1 contract deployment.
       erc8281: {
         envelope_version: "sentinel-v0",
         digest: "0x" + rootHashHex,
@@ -113,22 +143,48 @@ export async function POST(req: NextRequest) {
         contract: OCP_CONTRACT,
         tx_hash: receipt.hash,
         block_number: String(receipt.blockNumber),
-        receipt_log_position:
-          receiptLogPosition >= 0 ? String(receiptLogPosition) : null,
+        receipt_log_position: receiptLogPosition >= 0 ? String(receiptLogPosition) : null,
         committer: wallet.address,
         conformance_note:
           "Anchored via a v0 OCP contract predating the final ERC-8281 event signature. Not verifiable with erc8281/1 tooling (ocp-verify) until the v1 contract deployment; verify via the documented procedure in `verification`.",
       },
       verification: {
         instructions:
-          "1) SHA-256 each file. 2) Sort entries by filename (ascending, code-point order). 3) Build the string: <salt> + \"|\" + entries joined with \"|\", where each entry is \"<filename>:sha256:<hex digest>\". 4) SHA-256 that string; the result is the root hash. 5) Confirm the root hash (as bytes32, 0x-prefixed) appears in the referenced transaction's event log on Arbitrum One (chain ID 42161), emitted by the contract address in this proof, at the recorded receipt log position. Any RPC endpoint or block explorer suffices; no Verafile software or cooperation is required.",
-        independent_explorer: "https://arbiscan.io/tx/" + receipt.hash,
+          "Re-hash each file (SHA-256). Sort entries by filename. Prepend the salt. Compare root hash against blockchain.",
+        independent_verifier: "https://arbiscan.io/tx/" + receipt.hash,
       },
     };
-
-    return NextResponse.json(proof);
   } catch (err: any) {
-    console.error("Commit error:", err);
-    return NextResponse.json({ error: err.message || "Commit failed" }, { status: 500 });
+    console.error("Anchoring failed:", err);
+    return NextResponse.json(
+      { error: "anchor_failed", message: err.message || "Anchoring failed. Try again." },
+      { status: 500 }
+    );
   }
+
+  // -------------------------------------------------------------------------
+  // 4. Post-anchor accounting
+  // -------------------------------------------------------------------------
+  try {
+    const incremented = await recordAnchor({
+      userId,
+      txHash,
+      blockNumber,
+      rootHash,
+      documentType: anchorResponse.package
+        ? (anchorResponse.package as any).document_type
+        : null,
+      organizationName: anchorResponse.package
+        ? (anchorResponse.package as any).organization
+        : null,
+      fileCount: (anchorResponse.manifest as any[])?.length ?? null,
+    });
+    if (!incremented) {
+      console.warn(`User ${userId} exceeded limit via concurrent requests.`);
+    }
+  } catch (err) {
+    console.error("Failed to record anchor usage:", err);
+  }
+
+  return NextResponse.json(anchorResponse);
 }
