@@ -1,10 +1,6 @@
 import { neon } from "@neondatabase/serverless";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is not set");
-}
-
-export const sql = neon(process.env.DATABASE_URL);
+export const sql = neon(process.env.DATABASE_URL ?? "postgresql://localhost/placeholder");
 
 // ---------------------------------------------------------------------------
 // Types
@@ -45,9 +41,9 @@ export interface AnchorRow {
 }
 
 export const PLAN_LIMITS: Record<Plan, number> = {
-  demo: 5, // lifetime cap, never resets
-  starter: 50, // per month
-  professional: 500, // per month
+  demo: 5,          // lifetime cap, never resets
+  contractor: 10,   // per month
+  assessor: 100,    // per month
   enterprise: 10000, // per month
 };
 

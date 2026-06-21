@@ -17,14 +17,14 @@ export const runtime = "nodejs";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { anchorId: string } }
+  { params }: { params: Promise<{ anchorId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const { anchorId } = params;
+  const { anchorId } = await params;
   if (!anchorId) return NextResponse.json({ error: "anchorId required" }, { status: 400 });
 
   // Fetch anchor row — verify ownership

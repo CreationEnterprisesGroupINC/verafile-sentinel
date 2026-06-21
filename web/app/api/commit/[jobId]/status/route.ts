@@ -19,14 +19,14 @@ export const runtime = "nodejs";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const { jobId } = params;
+  const { jobId } = await params;
   if (!jobId || !/^[a-f0-9]{32}$/.test(jobId)) {
     return NextResponse.json({ error: "Invalid jobId" }, { status: 400 });
   }

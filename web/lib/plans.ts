@@ -36,6 +36,7 @@ export interface PlanDef {
   annual: Omit<PlanVariant, "priceId">;
   monthlyPriceEnvKey: string;
   annualPriceEnvKey: string;
+  meterPriceEnvKey: string;
 }
 
 export const PLANS: PlanDef[] = [
@@ -70,6 +71,7 @@ export const PLANS: PlanDef[] = [
     },
     monthlyPriceEnvKey: "STRIPE_PRICE_CONTRACTOR_MONTHLY",
     annualPriceEnvKey:  "STRIPE_PRICE_CONTRACTOR_ANNUAL",
+    meterPriceEnvKey:   "STRIPE_PRICE_CONTRACTOR_METER",
   },
   {
     id: "assessor",
@@ -103,6 +105,7 @@ export const PLANS: PlanDef[] = [
     },
     monthlyPriceEnvKey: "STRIPE_PRICE_ASSESSOR_MONTHLY",
     annualPriceEnvKey:  "STRIPE_PRICE_ASSESSOR_ANNUAL",
+    meterPriceEnvKey:   "STRIPE_PRICE_ASSESSOR_METER",
   },
 ];
 

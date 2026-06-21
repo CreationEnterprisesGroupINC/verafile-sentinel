@@ -1,0 +1,21 @@
+{
+  "sentinel_version": "1.0.0",
+  "proof_type": "ocp-erc8281",
+  "root_hash": "sha256:13fb3c2302d5e6adc24aa2a0bcad84ff575ee77efbc052845b41469ae2ca87ec",
+  "manifest_hash": "sha256:13fb3c2302d5e6adc24aa2a0bcad84ff575ee77efbc052845b41469ae2ca87ec",
+  "chain": {
+    "name": "arbitrum-one",
+    "chain_id": 42161,
+    "contract": "0x65884e7db1E57cA2AEf0d66eFcff9c738684B02a"
+  },
+  "commitment": {
+    "tx_hash": "0xae52fbd18d6e762d52442b359d443b274f3adc507fe79af245790a9b19668596",
+    "block_number": 472367706,
+    "block_timestamp": "2026-06-11T12:00:54.000Z",
+    "committer_address": "0x8E7a10E46A32D85C0E2051D5320bE3819Ae4EC73"
+  },
+  "verification": {
+    "instructions": "Re-hash the target directory using SHA-256 Merkle. Compare root hash against on-chain commitment at the tx_hash above.",
+    "independent_verifier": "https://arbiscan.io/tx/0xae52fbd18d6e762d52442b359d443b274f3adc507fe79af245790a9b19668596"
+  }
+}
