@@ -39,10 +39,21 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      // On initial sign-in, persist the user id into the token.
+    async jwt({ token, user, trigger }) {
+      // On initial sign-in, persist the user id.
       if (user) {
         token.userId = user.id;
+      }
+      // Refresh plan + subscriptionStatus into the JWT so middleware can
+      // enforce subscription state without a DB call.
+      // Runs on sign-in and on explicit session update (trigger === "update").
+      if (token.userId && (user || trigger === "update")) {
+        const dbUser = await getUserById(token.userId as string);
+        if (dbUser) {
+          token.plan               = dbUser.plan;
+          token.subscriptionStatus = dbUser.subscription_status;
+          token.approved           = dbUser.approved;
+        }
       }
       return token;
     },

@@ -1,0 +1,21 @@
+{
+  "name": "sentinel-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Verafile Sentinel \u2014 OCP commit worker. Runs on Railway. Single process, sequential nonce management.",
+  "main": "worker.js",
+  "scripts": {
+    "start": "node worker.js",
+    "dev": "node --watch worker.js"
+  },
+  "dependencies": {
+    "@upstash/qstash": "^2.7.0",
+    "@upstash/redis": "^1.34.0",
+    "ethers": "^6.16.0",
+    "resend": "^3.2.0",
+    "stripe": "^14.25.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

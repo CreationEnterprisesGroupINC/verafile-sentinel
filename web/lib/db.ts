@@ -10,7 +10,7 @@ export const sql = neon(process.env.DATABASE_URL);
 // Types
 // ---------------------------------------------------------------------------
 
-export type Plan = "demo" | "starter" | "professional" | "enterprise";
+export type Plan = "demo" | "contractor" | "assessor" | "enterprise";
 
 export interface UserRow {
   id: string;
@@ -21,6 +21,7 @@ export interface UserRow {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   subscription_status: string;
+  approved: boolean;           // demo users require manual approval before anchoring
   anchors_used_this_month: number;
   anchor_limit: number;
   billing_period_start: string | null;
@@ -37,6 +38,9 @@ export interface AnchorRow {
   document_type: string | null;
   organization_name: string | null;
   file_count: number | null;
+  proof_key: string | null;    // S3 key for sentinel.proof.json
+  receipt_key: string | null;  // S3 key for DoD-format receipt .txt
+  job_id: string | null;       // QStash job ID for status polling
   created_at: string;
 }
 

@@ -9,6 +9,7 @@ export default function RegisterPage() {
   const router = useRouter();
 
   const [name, setName] = useState("");
+  const [organization, setOrganization] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -20,6 +21,10 @@ export default function RegisterPage() {
 
     if (!name.trim()) {
       setError("Enter your name.");
+      return;
+    }
+    if (!organization.trim()) {
+      setError("Enter your organization name.");
       return;
     }
     if (!email.trim()) {
@@ -40,7 +45,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, organization, email, password }),
       });
 
       if (!res.ok) {
@@ -103,6 +108,19 @@ export default function RegisterPage() {
               onChange={(e) => setName(e.target.value)}
               className="mt-1 w-full rounded-md border border-[#1A3A6B] bg-[#0D1D33] px-3 py-2 text-white placeholder-[#6B7280] outline-none focus:border-[#86EFAC]"
               placeholder="Jane Contractor"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#E2E8F0]">
+              Organization
+            </label>
+            <input
+              type="text"
+              value={organization}
+              onChange={(e) => setOrganization(e.target.value)}
+              className="mt-1 w-full rounded-md border border-[#1A3A6B] bg-[#0D1D33] px-3 py-2 text-white placeholder-[#6B7280] outline-none focus:border-[#86EFAC]"
+              placeholder="Your company or organization name"
             />
           </div>
 

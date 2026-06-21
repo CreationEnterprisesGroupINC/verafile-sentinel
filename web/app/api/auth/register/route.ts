@@ -1,20 +1,22 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { createUser, getUserByEmail } from "@/lib/db";
+import { sendWelcomeEmail, sendAdminNewSignupEmail } from "@/lib/email";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: Request) {
-  let body: { name?: string; email?: string; password?: string };
+  let body: { name?: string; email?: string; password?: string; organization?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const name = (body.name ?? "").trim();
-  const email = (body.email ?? "").trim().toLowerCase();
-  const password = body.password ?? "";
+  const name         = (body.name ?? "").trim();
+  const email        = (body.email ?? "").trim().toLowerCase();
+  const password     = body.password ?? "";
+  const organization = (body.organization ?? "").trim();
 
   if (!name || name.length > 255) {
     return NextResponse.json(
@@ -25,6 +27,12 @@ export async function POST(req: Request) {
   if (!EMAIL_RE.test(email) || email.length > 255) {
     return NextResponse.json(
       { error: "invalid_email", message: "Enter a valid email address." },
+      { status: 400 }
+    );
+  }
+  if (!organization || organization.length > 255) {
+    return NextResponse.json(
+      { error: "invalid_org", message: "Enter your organization name." },
       { status: 400 }
     );
   }
@@ -59,6 +67,17 @@ export async function POST(req: Request) {
 
   try {
     const user = await createUser({ email, passwordHash, name });
+
+    // Fire emails non-blocking — never fail registration over an email error
+    Promise.all([
+      sendWelcomeEmail({ to: email, name, organization }).catch(err =>
+        console.error("[register] welcome email failed:", err.message)
+      ),
+      sendAdminNewSignupEmail({ userName: name, userEmail: email, organization, userId: user.id }).catch(err =>
+        console.error("[register] admin notification failed:", err.message)
+      ),
+    ]);
+
     return NextResponse.json(
       { ok: true, userId: user.id },
       { status: 201 }
