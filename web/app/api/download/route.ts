@@ -20,7 +20,7 @@ const URL_EXPIRY_SECONDS = 15 * 60; // 15 minutes
 function getS3Client(): S3Client {
   const { S3_REGION: region, S3_ACCESS_KEY_ID: accessKeyId, S3_SECRET_ACCESS_KEY: secretAccessKey, S3_ENDPOINT: endpoint } = process.env;
   if (!region || !accessKeyId || !secretAccessKey) throw new Error("S3 not configured");
-  return new S3Client({ region, credentials: { accessKeyId, secretAccessKey }, ...(endpoint ? { endpoint, forcePathStyle: true } : {}) });
+  return new S3Client({ region, credentials: { accessKeyId, secretAccessKey }, ...(endpoint ? { endpoint, forcePathStyle: false } : {}) });
 }
 
 export async function GET(req: NextRequest) {

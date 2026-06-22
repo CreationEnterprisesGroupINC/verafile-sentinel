@@ -37,7 +37,7 @@ export function getS3Client(): S3Client {
   _client = new S3Client({
     region,
     credentials: { accessKeyId, secretAccessKey },
-    ...(endpoint ? { endpoint, forcePathStyle: true } : {}),
+    ...(endpoint ? { endpoint, forcePathStyle: false } : {}),
   });
 
   return _client;

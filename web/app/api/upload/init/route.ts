@@ -58,7 +58,7 @@ function getS3Client(): S3Client {
   return new S3Client({
     region,
     credentials: { accessKeyId, secretAccessKey },
-    ...(endpoint ? { endpoint, forcePathStyle: true } : {}),
+    ...(endpoint ? { endpoint, forcePathStyle: false } : {}),
     requestChecksumCalculation: "WHEN_REQUIRED",
     responseChecksumValidation: "WHEN_REQUIRED",
   });
