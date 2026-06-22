@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
       Bucket: bucket,
       Key: s3Key,
       ContentType: mimeType,
-      ContentLength: sizeBytes,
+      // ContentLength omitted — browsers cannot set Content-Length on PUT
       // Tag for lifecycle policy — unconfirmed uploads can be expired after 24h
       Tagging: "status=pending",
     });

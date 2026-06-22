@@ -1,14 +1,4 @@
 // app/api/commit/[jobId]/status/route.ts
-//
-// Client polls this every 3 seconds after POST /api/commit returns { jobId }.
-// Returns the current job state from Redis.
-//
-// Responses:
-//   pending    — job is queued, worker hasn't started
-//   processing — worker has picked up the job, tx submitted
-//   confirmed  — tx confirmed, proof available in response
-//   failed     — worker exhausted retries, error_detail available
-//   dead       — in DLQ, requires manual intervention
 
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -36,12 +26,10 @@ export async function GET(
     return NextResponse.json({ error: "Job not found" }, { status: 404 });
   }
 
-  // Ownership check — users can only poll their own jobs
   if (job.payload.userId !== session.user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Shape the response based on status
   const base = {
     jobId: job.jobId,
     status: job.status,
