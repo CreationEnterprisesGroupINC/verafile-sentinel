@@ -59,6 +59,8 @@ function getS3Client(): S3Client {
     region,
     credentials: { accessKeyId, secretAccessKey },
     ...(endpoint ? { endpoint, forcePathStyle: true } : {}),
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
   });
 }
 
@@ -118,9 +120,7 @@ export async function POST(req: NextRequest) {
       Bucket: bucket,
       Key: s3Key,
       ContentType: mimeType,
-      // ContentLength omitted — browsers cannot set Content-Length on PUT
-      // Tag for lifecycle policy — unconfirmed uploads can be expired after 24h
-      Tagging: "status=pending",
+      // ContentLength and Tagging omitted — these add headers browsers cannot set
     });
     uploadUrl = await getSignedUrl(client, command, { expiresIn: URL_EXPIRY_SECONDS });
   } catch (err: any) {
