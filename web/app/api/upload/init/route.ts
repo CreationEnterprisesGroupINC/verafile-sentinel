@@ -119,8 +119,22 @@ export async function POST(req: NextRequest) {
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: s3Key,
-      ContentType: mimeType,
-      // ContentLength and Tagging omitted — these add headers browsers cannot set
+      // ContentType intentionally OMITTED.
+      //
+      // R2 presigned PUT from a browser must be a minimal, host-only signed
+      // request. Anything beyond `host` in the signed/expected set is a way for
+      // the PUT to 403 — and an R2 403 carries no CORS headers, so the browser
+      // reports it as "Access-Control-Allow-Origin: Missing Header" rather than
+      // the real 403. We therefore sign ONLY host and let the client send a body
+      // with no Content-Type. The object lands as application/octet-stream, which
+      // is correct here: files are fingerprinted and sealed, never re-served by
+      // their content-type.
+      //
+      // ContentLength, Tagging, and ChecksumAlgorithm are likewise omitted —
+      // ContentLength/Tagging add headers the browser cannot set, and the SDK's
+      // default CRC32 checksum (suppressed via requestChecksumCalculation:
+      // "WHEN_REQUIRED" in getS3Client) would otherwise embed a checksum of an
+      // EMPTY body as a signed query param, guaranteeing a body mismatch → 403.
     });
     uploadUrl = await getSignedUrl(client, command, { expiresIn: URL_EXPIRY_SECONDS });
   } catch (err: any) {

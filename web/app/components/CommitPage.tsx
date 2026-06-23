@@ -56,12 +56,22 @@ async function uploadFile(file: File): Promise<FileToken> {
   }
   const { uploadUrl, s3Key } = await initRes.json();
 
+  // The presigned URL signs ONLY `host` (SignedHeaders=host). To avoid a masked
+  // 403 from R2 (a 403 with no CORS headers shows up in the browser as
+  // "Access-Control-Allow-Origin: Missing Header"), the PUT must not carry a
+  // Content-Type header. `fetch` auto-derives Content-Type from a File/Blob's
+  // `type`, so we wrap the bytes in a typeless Blob to suppress the header
+  // entirely. `new Blob([file])` shares the File's underlying storage, so this
+  // is safe for large uploads.
   const putRes = await fetch(uploadUrl, {
     method: "PUT",
-    body: file,
-    headers: { "Content-Type": file.type || "application/octet-stream" },
+    body: new Blob([file]),
   });
-  if (!putRes.ok) throw new Error(`Storage upload failed (${putRes.status}). Try again.`);
+  if (!putRes.ok) {
+    // R2 masks signature/checksum 403s as opaque CORS failures; surface the
+    // status so the real cause is visible in logs.
+    throw new Error(`Storage upload failed (${putRes.status || "network/CORS"}). Try again.`);
+  }
 
   const sha256Hex = await sha256File(file);
 
