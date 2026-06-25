@@ -283,20 +283,23 @@ async function anchorWithRetry(payload, redis) {
 // Email
 // ---------------------------------------------------------------------------
 
-async function sendConfirmationEmail({ userId, organizationName, documentType, txHash, blockNumber, blockTimestamp, proofS3Key, receiptS3Key, appUrl }) {
-  if (!process.env.RESEND_API_KEY) { console.warn("[worker] RESEND_API_KEY not set — skipping email"); return; }
-
-  // Fetch user email from app
-  let userEmail = null;
-  let userInfo = null;
+async function fetchUserInfo(appUrl, userId) {
   try {
     const res = await fetch(`${appUrl}/api/internal/user-email?userId=${userId}`, {
       headers: { "x-internal-secret": process.env.INTERNAL_SECRET ?? "" },
     });
-    if (res.ok) { const d = await res.json(); userEmail = d.email; userInfo = d; }
+    if (res.ok) return await res.json(); // { email, name, stripeCustomerId, plan }
+    console.error(`[worker] user-email fetch returned ${res.status}`);
   } catch (err) {
-    console.error("[worker] Failed to fetch user email:", err.message);
+    console.error("[worker] Failed to fetch user info:", err.message);
   }
+  return null;
+}
+
+async function sendConfirmationEmail({ userInfo, userId, organizationName, documentType, txHash, blockNumber, blockTimestamp, appUrl }) {
+  if (!process.env.RESEND_API_KEY) { console.warn("[worker] RESEND_API_KEY not set — skipping email"); return; }
+
+  const userEmail = userInfo?.email ?? null;
   if (!userEmail) { console.warn(`[worker] No email for user ${userId} — skipping email`); return; }
 
   const resend = getResend();
@@ -411,6 +414,12 @@ async function processJob(payload) {
     console.error("[worker] record-anchor fetch failed:", err.message);
   }
 
+  // Fetch user info once for metering + email. Previously these lines
+  // referenced `userInfo`/`userEmail` that were only declared inside
+  // sendConfirmationEmail — out of scope here — which threw a ReferenceError
+  // after a successful on-chain anchor and left the job stuck in "processing".
+  const userInfo = await fetchUserInfo(appUrl, userId);
+
   // Stripe metered billing — report one anchor event
   await reportMeterEvent({
     stripeCustomerId: userInfo?.stripeCustomerId ?? null,
@@ -419,8 +428,7 @@ async function processJob(payload) {
   });
 
   // Email confirmation
-  if (userInfo?.email) userEmail = userInfo.email;
-  await sendConfirmationEmail({ userId, organizationName, documentType, txHash, blockNumber, blockTimestamp, proofS3Key: proofKey, receiptS3Key: receiptKey, appUrl });
+  await sendConfirmationEmail({ userInfo, userId, organizationName, documentType, txHash, blockNumber, blockTimestamp, appUrl });
 
   // Update Redis to confirmed with full proof
   await setJobField(redis, jobId, {
